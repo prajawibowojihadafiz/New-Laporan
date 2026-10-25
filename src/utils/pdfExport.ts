@@ -17,11 +17,24 @@ export function isWebShareSupported(): boolean {
  */
 async function waitForImagesToLoad(element: HTMLElement): Promise<void> {
   const images = Array.from(element.querySelectorAll('img'));
-  const promises = images.map((img) => {
-    if (img.complete) return Promise.resolve();
+  const promises = images.map(async (img) => {
+    if (img.complete && img.naturalWidth > 0) return;
+    if (img.decode) {
+      try {
+        await img.decode();
+        return;
+      } catch {
+        // Fallback to load event listener
+      }
+    }
     return new Promise<void>((resolve) => {
+      if (img.complete && img.naturalWidth > 0) {
+        resolve();
+        return;
+      }
       img.onload = () => resolve();
       img.onerror = () => resolve();
+      setTimeout(resolve, 2000);
     });
   });
   await Promise.all(promises);
@@ -36,17 +49,30 @@ async function buildPdfFromElement(
   element: HTMLElement,
   targetWidth: number = 800
 ): Promise<{ pdf: jsPDF; canvas: HTMLCanvasElement }> {
-  // Wait for any images to settle
+  // Wait for all images to settle and decode in DOM
   await waitForImagesToLoad(element);
 
   const canvas = await html2canvas(element, {
     scale: 2,
     useCORS: true,
+    allowTaint: true,
     logging: false,
     backgroundColor: '#ffffff',
     windowWidth: 1024,
     width: targetWidth,
+    imageTimeout: 15000,
     onclone: (clonedDoc, clonedEl) => {
+      // Clean up any crossOrigin attributes on data URLs inside the cloned DOM
+      const clonedImages = Array.from(clonedEl.querySelectorAll('img'));
+      clonedImages.forEach((img) => {
+        img.style.display = 'block';
+        img.style.visibility = 'visible';
+        img.style.opacity = '1';
+        if (img.src && img.src.startsWith('data:')) {
+          img.removeAttribute('crossorigin');
+        }
+      });
+
       // Force viewport and document width on the cloned document
       clonedDoc.documentElement.style.width = `${targetWidth}px`;
       clonedDoc.documentElement.style.minWidth = `${targetWidth}px`;

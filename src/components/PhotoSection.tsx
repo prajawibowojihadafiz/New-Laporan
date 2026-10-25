@@ -101,32 +101,43 @@ export const PhotoSection: React.FC<PhotoSectionProps> = ({
             Belum ada dokumentasi foto yang diunggah.
           </div>
         ) : (
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5 overflow-y-auto max-h-56 pr-1">
-            {photos.map((item) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 overflow-y-auto max-h-60 pr-1">
+            {photos.map((item, idx) => (
               <div
                 key={item.id}
-                className="group relative rounded-2xl overflow-hidden border border-rose-500/25 bg-[#160206] aspect-square shadow-md"
+                onClick={() => setSelectedPhoto(item)}
+                className="group relative rounded-2xl overflow-hidden border border-rose-500/30 hover:border-rose-400 bg-[#160206] aspect-square shadow-md cursor-pointer transition-all active:scale-95"
+                title="Klik untuk melihat foto lebih besar"
               >
                 <img
                   src={item.url}
                   alt={item.name}
                   className="w-full h-full object-cover transition duration-300 group-hover:scale-105"
-                  loading="lazy"
                 />
 
-                {/* Hover overlay with actions */}
-                <div className="absolute inset-0 bg-[#0f0205]/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                {/* Bottom title & timestamp bar */}
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/50 to-transparent p-1.5 flex items-center justify-between text-[10px] text-white pointer-events-none">
+                  <span className="truncate max-w-[65%] font-medium">
+                    #{idx + 1} {item.name}
+                  </span>
+                  <span className="text-[9px] text-rose-300 font-bold shrink-0 bg-black/40 px-1 rounded">
+                    {item.timestamp || 'Foto'}
+                  </span>
+                </div>
+
+                {/* Top Actions: Eye (Lihat) & Trash (Hapus) */}
+                <div className="absolute top-1.5 right-1.5 flex items-center gap-1 z-10">
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedPhoto(item);
                     }}
-                    className="p-1.5 bg-white/90 hover:bg-white text-slate-900 rounded-lg text-xs shadow-sm transition cursor-pointer"
-                    title="Lihat ukuran penuh"
+                    className="p-1.5 bg-black/70 hover:bg-white text-white hover:text-slate-900 rounded-lg text-xs shadow transition cursor-pointer backdrop-blur-sm"
+                    title="Lihat foto penuh"
                     aria-label={`Lihat foto ${item.name}`}
                   >
-                    <Eye className="w-3.5 h-3.5" />
+                    <Eye className="w-3 h-3" />
                   </button>
                   <button
                     type="button"
@@ -134,11 +145,11 @@ export const PhotoSection: React.FC<PhotoSectionProps> = ({
                       e.stopPropagation();
                       onRemovePhoto(item.id);
                     }}
-                    className="p-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs shadow-sm transition cursor-pointer"
+                    className="p-1.5 bg-rose-950/80 hover:bg-rose-600 text-rose-200 hover:text-white rounded-lg text-xs shadow transition cursor-pointer border border-rose-500/30 backdrop-blur-sm"
                     title="Hapus foto"
                     aria-label={`Hapus foto ${item.name}`}
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-3 h-3" />
                   </button>
                 </div>
               </div>
@@ -150,28 +161,55 @@ export const PhotoSection: React.FC<PhotoSectionProps> = ({
       {/* Photo Lightbox Modal */}
       {selectedPhoto && (
         <div
-          className="fixed inset-0 bg-[#0a0103]/85 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+          className="fixed inset-0 bg-[#0a0103]/90 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
           onClick={() => setSelectedPhoto(null)}
+          role="dialog"
+          aria-modal="true"
         >
           <div
-            className="relative max-w-3xl w-full glass-maroon-card rounded-3xl overflow-hidden shadow-2xl p-3 border border-rose-500/30"
+            className="relative max-w-3xl w-full glass-maroon-card rounded-3xl overflow-hidden shadow-2xl p-4 border border-rose-500/40 animate-in zoom-in-95"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between p-2 text-white border-b border-rose-500/20 mb-2">
-              <span className="text-xs font-bold text-rose-200 truncate max-w-xs">{selectedPhoto.name}</span>
-              <button
-                onClick={() => setSelectedPhoto(null)}
-                className="p-1.5 bg-rose-950/80 hover:bg-rose-900 text-rose-300 hover:text-white rounded-xl border border-rose-500/30 transition cursor-pointer"
-                aria-label="Tutup preview foto"
-              >
-                <X className="w-5 h-5" />
-              </button>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-rose-500/20 mb-3">
+              <div className="truncate pr-3">
+                <span className="text-sm font-extrabold text-white truncate block">
+                  {selectedPhoto.name}
+                </span>
+                <span className="text-[11px] text-rose-300/70">
+                  Waktu: {selectedPhoto.timestamp || 'Dokumentasi Kegiatan'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onRemovePhoto(selectedPhoto.id);
+                    setSelectedPhoto(null);
+                  }}
+                  className="p-2 bg-rose-950/80 hover:bg-rose-600 text-rose-200 hover:text-white rounded-xl border border-rose-500/30 transition cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
+                  title="Hapus foto ini"
+                >
+                  <Trash2 className="w-4 h-4 text-rose-300" />
+                  <span className="hidden sm:inline">Hapus</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedPhoto(null)}
+                  className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/20 transition cursor-pointer"
+                  aria-label="Tutup preview foto"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
-            <div className="max-h-[75vh] flex items-center justify-center bg-black/60 rounded-2xl overflow-hidden p-2">
+
+            {/* Modal Image View */}
+            <div className="max-h-[75vh] flex items-center justify-center bg-black/80 rounded-2xl overflow-hidden p-2 border border-rose-950">
               <img
                 src={selectedPhoto.url}
                 alt={selectedPhoto.name}
-                className="max-h-[70vh] w-auto object-contain rounded-xl"
+                className="max-h-[70vh] w-auto max-w-full object-contain rounded-xl"
               />
             </div>
           </div>

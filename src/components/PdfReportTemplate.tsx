@@ -79,7 +79,7 @@ export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTempl
               <img
                 src={settings.logoUrl}
                 alt="Logo"
-                crossOrigin="anonymous"
+                crossOrigin={settings.logoUrl.startsWith('data:') ? undefined : 'anonymous'}
                 className="w-14 h-14 object-contain rounded-xl border border-slate-300 p-1 bg-white shrink-0"
               />
             ) : (
@@ -511,14 +511,32 @@ export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTempl
                           style={{ width: '50%' }}
                         >
                           <div className="border border-slate-300 rounded-xl p-2.5 bg-slate-50/50 flex flex-col">
-                            {/* Compressed & resized photo viewport */}
-                            <div className="w-full h-44 rounded-lg overflow-hidden bg-slate-200 border border-slate-300 mb-2 flex items-center justify-center">
+                            {/* Compressed & resized photo viewport (html2canvas compatible) */}
+                            <div
+                              style={{
+                                width: '100%',
+                                height: '176px',
+                                overflow: 'hidden',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                backgroundColor: '#f1f5f9',
+                                border: '1px solid #cbd5e1',
+                                borderRadius: '8px',
+                                marginBottom: '8px',
+                              }}
+                            >
                               <img
                                 src={photo.url}
                                 alt={photo.name}
-                                crossOrigin="anonymous"
-                                className="w-full h-full object-cover"
-                                style={{ maxHeight: '176px', maxWidth: '100%' }}
+                                style={{
+                                  maxWidth: '100%',
+                                  maxHeight: '176px',
+                                  width: 'auto',
+                                  height: 'auto',
+                                  display: 'block',
+                                  margin: '0 auto',
+                                }}
                               />
                             </div>
                             <div className="flex items-center justify-between gap-1 text-[10px]">
