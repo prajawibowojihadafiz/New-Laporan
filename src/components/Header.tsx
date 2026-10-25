@@ -15,6 +15,7 @@ import {
   Sparkles,
   Cloud,
   RefreshCw,
+  Share2,
 } from 'lucide-react';
 import { Settings } from '../utils/reportLogic';
 
@@ -27,8 +28,10 @@ interface HeaderProps {
   settings: Settings;
   onOpenSettings: () => void;
   onExportPdf: () => void;
+  onSharePdf: () => void;
   onOpenWhatsAppModal: () => void;
   isGeneratingPdf?: boolean;
+  isSharingPdf?: boolean;
   loggedInUser?: string;
   onLogout?: () => void;
   syncStatus?: 'synced' | 'syncing' | 'offline';
@@ -45,8 +48,10 @@ export const Header: React.FC<HeaderProps> = ({
   settings,
   onOpenSettings,
   onExportPdf,
+  onSharePdf,
   onOpenWhatsAppModal,
   isGeneratingPdf = false,
+  isSharingPdf = false,
   loggedInUser = 'Meraya.id',
   onLogout,
   syncStatus = 'synced',
@@ -172,16 +177,36 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Export PDF Button */}
+          {/* Bagikan PDF Button (Primary action for mobile/HP) */}
+          <button
+            onClick={onSharePdf}
+            disabled={isSharingPdf || isGeneratingPdf}
+            className="inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 bg-gradient-to-r from-rose-700 via-rose-600 to-rose-500 hover:from-rose-600 hover:to-rose-400 active:from-rose-800 disabled:opacity-60 text-white text-xs sm:text-sm font-bold rounded-xl shadow-lg shadow-rose-950/60 border border-rose-400/30 transition cursor-pointer active:scale-95"
+            title={viewMode === 'daily' ? 'Bagikan Berkas PDF Laporan Harian (WhatsApp / Aplikasi HP)' : 'Bagikan Berkas PDF Laporan Bulanan'}
+            aria-label="Bagikan Dokumen PDF"
+          >
+            <Share2 className={`w-4 h-4 text-rose-100 ${isSharingPdf ? 'animate-pulse' : ''}`} />
+            <span>
+              {isSharingPdf
+                ? 'Membagikan...'
+                : viewMode === 'daily'
+                ? 'Bagikan PDF'
+                : 'Bagikan Rekap PDF'}
+            </span>
+          </button>
+
+          {/* Unduh PDF Button */}
           <button
             onClick={onExportPdf}
-            disabled={isGeneratingPdf}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-rose-700 to-rose-600 hover:from-rose-600 hover:to-rose-500 active:from-rose-800 active:to-rose-700 disabled:opacity-60 text-white text-xs sm:text-sm font-bold rounded-xl shadow-lg shadow-rose-950/60 border border-rose-400/30 transition cursor-pointer"
-            title={viewMode === 'daily' ? 'Unduh Laporan Harian (PDF)' : 'Unduh Laporan Bulanan & Grafik (PDF)'}
+            disabled={isGeneratingPdf || isSharingPdf}
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 bg-[#1b0308]/90 hover:bg-[#2c050f] active:bg-[#150206] disabled:opacity-50 text-rose-200 hover:text-white text-xs sm:text-sm font-semibold rounded-xl border border-rose-500/30 transition cursor-pointer"
+            title={viewMode === 'daily' ? 'Unduh Berkas PDF Harian ke Penyimpanan' : 'Unduh Berkas PDF Bulanan'}
             aria-label="Unduh Dokumen PDF"
           >
-            <FileDown className="w-4 h-4 text-rose-100" />
-            <span>{isGeneratingPdf ? 'Membuat PDF...' : viewMode === 'daily' ? 'Unduh PDF Harian' : 'Unduh PDF Bulanan'}</span>
+            <FileDown className="w-4 h-4 text-rose-300" />
+            <span className="hidden sm:inline">
+              {isGeneratingPdf ? 'Mengunduh...' : 'Unduh PDF'}
+            </span>
           </button>
 
           {/* Send WhatsApp (Daily mode) */}

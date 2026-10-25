@@ -17,6 +17,7 @@ import {
   Printer,
   CheckCircle2,
   AlertTriangle,
+  Share2,
 } from 'lucide-react';
 import { Header } from './components/Header';
 import { StatsBar } from './components/StatsBar';
@@ -38,7 +39,7 @@ import { PdfMonthlyReportTemplate } from './components/PdfMonthlyReportTemplate'
 import { LoginScreen } from './components/LoginScreen';
 import { LogoutModal } from './components/LogoutModal';
 import { AUTH_STORAGE_KEY, clearAuthSession, setAuthSession } from './utils/auth';
-import { exportReportToPdf } from './utils/pdfExport';
+import { exportReportToPdf, shareReportPdf } from './utils/pdfExport';
 import {
   saveDayReportToFirestore,
   subscribeToAllReports,
@@ -172,6 +173,7 @@ export default function App() {
   const [isResetAllModalOpen, setIsResetAllModalOpen] = useState(false);
   const [isResettingAll, setIsResettingAll] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isSharingPdf, setIsSharingPdf] = useState(false);
   const [isResyncing, setIsResyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'offline'>('synced');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -585,7 +587,7 @@ export default function App() {
     }
   };
 
-  // Export Daily PDF
+  // Export Daily PDF (Download)
   const handleExportDailyPdf = async () => {
     if (!pdfDailyTemplateRef.current) return;
     setIsGeneratingPdf(true);
@@ -608,7 +610,41 @@ export default function App() {
     }
   };
 
-  // Export Monthly PDF with Chart
+  // Share Daily PDF (Bagikan PDF via WhatsApp / Native Share)
+  const handleShareDailyPdf = async () => {
+    if (!pdfDailyTemplateRef.current) return;
+    setIsSharingPdf(true);
+    showToast('Sedang menyiapkan PDF harian untuk dibagikan...');
+
+    try {
+      const filename = `Laporan_Harian_Photobooth_${selectedDate}.pdf`;
+      const res = await shareReportPdf(
+        pdfDailyTemplateRef.current,
+        filename,
+        `Laporan Harian ${settings.boothName} (${dateStr})`
+      );
+
+      if (res.success) {
+        if (res.method === 'share') {
+          showToast('Laporan PDF berhasil dibagikan!');
+          try {
+            confetti({ particleCount: 40, spread: 60, origin: { y: 0.2 } });
+          } catch {}
+        } else if (res.method === 'download') {
+          showToast('PDF berhasil dibuat dan diunduh ke perangkat Anda!');
+        }
+      } else {
+        showToast(res.message || 'Gagal membagikan PDF.');
+      }
+    } catch {
+      showToast('Gagal membagikan PDF otomatis, membuka jendela cetak...');
+      window.print();
+    } finally {
+      setIsSharingPdf(false);
+    }
+  };
+
+  // Export Monthly PDF with Chart (Download)
   const handleExportMonthlyPdf = async () => {
     if (!pdfMonthlyTemplateRef.current) return;
     setIsGeneratingPdf(true);
@@ -628,6 +664,40 @@ export default function App() {
       window.print();
     } finally {
       setIsGeneratingPdf(false);
+    }
+  };
+
+  // Share Monthly PDF with Chart (Bagikan PDF Rekap Bulanan)
+  const handleShareMonthlyPdf = async () => {
+    if (!pdfMonthlyTemplateRef.current) return;
+    setIsSharingPdf(true);
+    showToast('Sedang menyiapkan PDF bulanan beserta grafik untuk dibagikan...');
+
+    try {
+      const filename = `Laporan_Bulanan_Photobooth_${selectedMonth}.pdf`;
+      const res = await shareReportPdf(
+        pdfMonthlyTemplateRef.current,
+        filename,
+        `Laporan Rekap Bulanan ${settings.boothName} (${monthlySummary.monthName})`
+      );
+
+      if (res.success) {
+        if (res.method === 'share') {
+          showToast('Laporan PDF bulanan berhasil dibagikan!');
+          try {
+            confetti({ particleCount: 50, spread: 70, origin: { y: 0.2 } });
+          } catch {}
+        } else if (res.method === 'download') {
+          showToast('PDF bulanan berhasil dibuat dan diunduh!');
+        }
+      } else {
+        showToast(res.message || 'Gagal membagikan PDF bulanan.');
+      }
+    } catch {
+      showToast('Gagal membagikan PDF bulanan otomatis, membuka jendela cetak...');
+      window.print();
+    } finally {
+      setIsSharingPdf(false);
     }
   };
 
@@ -708,8 +778,10 @@ export default function App() {
           settings={settings}
           onOpenSettings={() => setIsSettingsOpen(true)}
           onExportPdf={viewMode === 'daily' ? handleExportDailyPdf : handleExportMonthlyPdf}
+          onSharePdf={viewMode === 'daily' ? handleShareDailyPdf : handleShareMonthlyPdf}
           onOpenWhatsAppModal={() => setIsWhatsAppModalOpen(true)}
           isGeneratingPdf={isGeneratingPdf}
+          isSharingPdf={isSharingPdf}
           loggedInUser={loggedInUser}
           onLogout={handleLogout}
           syncStatus={syncStatus}
@@ -755,23 +827,38 @@ export default function App() {
               </div>
             </div>
 
-            {/* Hero Quick Pill Actions */}
-            <div className="flex items-center gap-2 shrink-0">
+            {/* Hero Quick Actions */}
+            <div className="flex items-center gap-2 shrink-0 flex-wrap">
+              {/* Bagikan PDF (Primary Mobile Action) */}
+              <button
+                type="button"
+                onClick={viewMode === 'daily' ? handleShareDailyPdf : handleShareMonthlyPdf}
+                disabled={isSharingPdf || isGeneratingPdf}
+                className="px-4 py-2.5 bg-gradient-to-r from-rose-700 via-rose-600 to-rose-500 hover:from-rose-600 active:from-rose-800 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-lg shadow-rose-950/60 border border-rose-400/30 flex items-center gap-2 transition cursor-pointer active:scale-95 disabled:opacity-60"
+                title={viewMode === 'daily' ? 'Bagikan PDF Laporan Harian (WhatsApp / HP)' : 'Bagikan PDF Rekap Bulanan'}
+              >
+                <Share2 className={`w-4 h-4 ${isSharingPdf ? 'animate-pulse' : ''}`} />
+                <span>{isSharingPdf ? 'Membagikan...' : 'Bagikan PDF'}</span>
+              </button>
+
+              {/* Unduh PDF */}
               <button
                 type="button"
                 onClick={viewMode === 'daily' ? handleExportDailyPdf : handleExportMonthlyPdf}
-                disabled={isGeneratingPdf}
-                className="px-4 py-2.5 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-lg shadow-rose-950/60 border border-rose-400/30 flex items-center gap-2 transition cursor-pointer"
+                disabled={isGeneratingPdf || isSharingPdf}
+                className="px-3.5 py-2.5 bg-[#1b0308]/90 hover:bg-[#2c050f] text-rose-200 hover:text-white font-semibold text-xs sm:text-sm rounded-2xl shadow-md border border-rose-500/30 flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+                title="Unduh berkas PDF ke perangkat"
               >
-                <FileDown className="w-4 h-4" />
-                <span>{isGeneratingPdf ? 'Memproses...' : 'Unduh PDF'}</span>
+                <FileDown className="w-4 h-4 text-rose-300" />
+                <span>{isGeneratingPdf ? 'Mengunduh...' : 'Unduh'}</span>
               </button>
 
               {viewMode === 'daily' && (
                 <button
                   type="button"
                   onClick={() => setIsWhatsAppModalOpen(true)}
-                  className="px-4 py-2.5 bg-emerald-600/90 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-md border border-emerald-400/30 flex items-center gap-2 transition cursor-pointer"
+                  className="px-3.5 py-2.5 bg-emerald-700/80 hover:bg-emerald-600 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-md border border-emerald-400/30 flex items-center gap-2 transition cursor-pointer"
+                  title="Kirim pesan ringkasan teks ke WhatsApp"
                 >
                   <Send className="w-4 h-4 text-emerald-200" />
                   <span>Kirim WA</span>
@@ -880,7 +967,9 @@ export default function App() {
                 showToast(`Membuka laporan tanggal ${clickedDate}`);
               }}
               onExportMonthlyPdf={handleExportMonthlyPdf}
+              onShareMonthlyPdf={handleShareMonthlyPdf}
               isGeneratingPdf={isGeneratingPdf}
+              isSharingPdf={isSharingPdf}
             />
           </div>
         )}
@@ -1019,10 +1108,19 @@ export default function App() {
         ownerPhone={settings.ownerPhone}
       />
 
-      {/* Hidden PDF Printable Document Template - Daily */}
+      {/* Offscreen PDF Printable Document Template - Daily */}
       <div
-        className="fixed -left-[9999px] top-0 pointer-events-none print:static print:left-0 print:top-0"
-        style={{ width: '850px' }}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '800px',
+          minWidth: '800px',
+          maxWidth: '800px',
+          opacity: 0,
+          pointerEvents: 'none',
+          zIndex: -100,
+        }}
         aria-hidden="true"
       >
         <PdfReportTemplate
@@ -1041,10 +1139,19 @@ export default function App() {
         />
       </div>
 
-      {/* Hidden PDF Printable Document Template - Monthly with Graph */}
+      {/* Offscreen PDF Printable Document Template - Monthly with Graph */}
       <div
-        className="fixed -left-[9999px] top-0 pointer-events-none print:static print:left-0 print:top-0"
-        style={{ width: '850px' }}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '800px',
+          minWidth: '800px',
+          maxWidth: '800px',
+          opacity: 0,
+          pointerEvents: 'none',
+          zIndex: -100,
+        }}
         aria-hidden="true"
       >
         <PdfMonthlyReportTemplate

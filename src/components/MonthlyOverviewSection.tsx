@@ -9,6 +9,7 @@ import {
   ChevronRight,
   FileDown,
   ArrowUpRight,
+  Share2,
 } from 'lucide-react';
 import {
   MonthlyReportSummary,
@@ -22,7 +23,9 @@ interface MonthlyOverviewSectionProps {
   onChangeMonth: (newMonth: string) => void;
   onSelectDate: (dateKey: string) => void;
   onExportMonthlyPdf: () => void;
+  onShareMonthlyPdf?: () => void;
   isGeneratingPdf?: boolean;
+  isSharingPdf?: boolean;
 }
 
 export const MonthlyOverviewSection: React.FC<MonthlyOverviewSectionProps> = ({
@@ -31,7 +34,9 @@ export const MonthlyOverviewSection: React.FC<MonthlyOverviewSectionProps> = ({
   onChangeMonth,
   onSelectDate,
   onExportMonthlyPdf,
+  onShareMonthlyPdf,
   isGeneratingPdf = false,
+  isSharingPdf = false,
 }) => {
   const handlePrevMonth = () => {
     const [y, m] = selectedMonth.split('-').map(Number);
@@ -93,14 +98,26 @@ export const MonthlyOverviewSection: React.FC<MonthlyOverviewSectionProps> = ({
             </button>
           </div>
 
+          {onShareMonthlyPdf && (
+            <button
+              type="button"
+              onClick={onShareMonthlyPdf}
+              disabled={isSharingPdf || isGeneratingPdf}
+              className="inline-flex items-center gap-2 px-3.5 sm:px-4 py-2.5 bg-gradient-to-r from-rose-700 via-rose-600 to-rose-500 hover:from-rose-600 active:from-rose-800 disabled:opacity-60 text-white text-xs sm:text-sm font-bold rounded-xl shadow-lg shadow-rose-950/60 border border-rose-400/30 transition cursor-pointer active:scale-95"
+            >
+              <Share2 className={`w-4 h-4 ${isSharingPdf ? 'animate-pulse' : ''}`} />
+              <span>{isSharingPdf ? 'Membagikan...' : 'Bagikan PDF Bulanan'}</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={onExportMonthlyPdf}
-            disabled={isGeneratingPdf}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-rose-700 to-rose-600 hover:from-rose-600 hover:to-rose-500 active:from-rose-800 disabled:opacity-60 text-white text-xs sm:text-sm font-bold rounded-xl shadow-lg shadow-rose-950/60 border border-rose-400/30 transition cursor-pointer"
+            disabled={isGeneratingPdf || isSharingPdf}
+            className="inline-flex items-center gap-2 px-3.5 py-2.5 bg-[#1b0308]/90 hover:bg-[#2c050f] disabled:opacity-50 text-rose-200 hover:text-white text-xs sm:text-sm font-semibold rounded-xl border border-rose-500/30 transition cursor-pointer"
           >
-            <FileDown className="w-4 h-4" />
-            <span>{isGeneratingPdf ? 'Membuat PDF...' : 'Unduh PDF Bulanan & Grafik'}</span>
+            <FileDown className="w-4 h-4 text-rose-300" />
+            <span>{isGeneratingPdf ? 'Mengunduh...' : 'Unduh PDF'}</span>
           </button>
         </div>
       </div>
