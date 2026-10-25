@@ -1,0 +1,6 @@
+{
+  "name": "Laporan Harian Photobooth",
+  "description": "Aplikasi pelaporan harian operasional photobooth dengan kalkulasi otomatis orderan, pemasukan, checklist booth & stok tinta, upload foto, ekspor PDF, dan integrasi WhatsApp.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

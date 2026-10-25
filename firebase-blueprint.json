@@ -1,0 +1,94 @@
+{
+  "entities": {
+    "DayReport": {
+      "title": "DayReport",
+      "description": "Laporan harian photobooth berisi orderan, pemasukan, kondisi booth, stok, dan kendala",
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string",
+          "description": "Format YYYY-MM-DD"
+        },
+        "orders": {
+          "type": "array",
+          "description": "Daftar transaksi orderan"
+        },
+        "customFrames": {
+          "type": "array",
+          "description": "Daftar antrean custom frame"
+        },
+        "incomes": {
+          "type": "array",
+          "description": "Daftar pos pemasukan harian"
+        },
+        "boothCondition": {
+          "type": "object",
+          "description": "Status kondisi hardware photobooth"
+        },
+        "stockCondition": {
+          "type": "object",
+          "description": "Status stok kertas dan tinta"
+        },
+        "issues": {
+          "type": "array",
+          "description": "Catatan kendala teknis atau operasional"
+        },
+        "purchases": {
+          "type": "array",
+          "description": "Daftar belanja atau restock"
+        },
+        "photos": {
+          "type": "array",
+          "description": "Daftar foto dokumentasi"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Catatan kegiatan harian kasir"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp waktu pembaruan terakhir"
+        }
+      },
+      "required": ["date"]
+    },
+    "AppSettings": {
+      "title": "AppSettings",
+      "description": "Pengaturan umum booth, operator, kontak owner",
+      "type": "object",
+      "properties": {
+        "boothName": {
+          "type": "string",
+          "description": "Nama outlet photobooth"
+        },
+        "attendantName": {
+          "type": "string",
+          "description": "Nama kasir atau operator bertugas"
+        },
+        "ownerPhone": {
+          "type": "string",
+          "description": "Nomor WhatsApp owner"
+        },
+        "logoUrl": {
+          "type": "string",
+          "description": "URL logo booth"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp update pengaturan"
+        }
+      },
+      "required": ["boothName", "attendantName", "ownerPhone"]
+    }
+  },
+  "firestore": {
+    "/reports/{reportId}": {
+      "schema": "DayReport",
+      "description": "Laporan harian yang disinkronkan real-time antara HP kasir dan laptop owner"
+    },
+    "/settings/{settingId}": {
+      "schema": "AppSettings",
+      "description": "Pengaturan booth yang disinkronkan secara real-time"
+    }
+  }
+}
