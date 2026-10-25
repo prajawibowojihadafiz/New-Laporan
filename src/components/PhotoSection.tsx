@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Image as ImageIcon, UploadCloud, Trash2, X, Eye } from 'lucide-react';
 import { PhotoItem } from '../utils/reportLogic';
+import { compressImageFile } from '../utils/imageCompressor';
 
 interface PhotoSectionProps {
   photos: PhotoItem[];
@@ -15,33 +16,39 @@ export const PhotoSection: React.FC<PhotoSectionProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoItem | null>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
 
-    const loadedPhotos: PhotoItem[] = [];
-    let processed = 0;
+    setIsCompressing(true);
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} WIB`;
 
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          loadedPhotos.push({
-            id: `photo-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-            url: event.target.result as string,
-            name: file.name,
-          });
-        }
-        processed++;
-        if (processed === files.length) {
-          onAddPhotos(loadedPhotos);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
+    try {
+      const compressionPromises = files.map(async (file) => {
+        // Compress and resize image to max 500px width with 0.65 quality
+        const compressedUrl = await compressImageFile(file, 500, 0.65);
+        return {
+          id: `photo-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+          url: compressedUrl || '',
+          name: file.name,
+          timestamp: timeStr,
+        };
+      });
 
-    e.target.value = '';
+      const loadedPhotos = await Promise.all(compressionPromises);
+      const validPhotos = loadedPhotos.filter((p) => Boolean(p.url));
+      if (validPhotos.length > 0) {
+        onAddPhotos(validPhotos);
+      }
+    } catch (err) {
+      console.error('Failed to compress photos:', err);
+    } finally {
+      setIsCompressing(false);
+      e.target.value = '';
+    }
   };
 
   return (
@@ -72,10 +79,10 @@ export const PhotoSection: React.FC<PhotoSectionProps> = ({
           <UploadCloud className="w-5 h-5 text-rose-200" />
         </div>
         <p className="text-xs font-bold text-white">
-          Klik untuk unggah foto kegiatan
+          {isCompressing ? 'Sedang mengompres & optimasi foto...' : 'Klik untuk unggah foto kegiatan'}
         </p>
         <p className="text-[11px] text-rose-300/60">
-          Bisa pilih banyak foto (JPG, PNG, WEBP)
+          {isCompressing ? 'Menyesuaikan resolusi agar berkas PDF ringan...' : 'Bisa pilih banyak foto (JPG, PNG, WEBP)'}
         </p>
         <input
           ref={fileInputRef}

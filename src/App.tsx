@@ -587,6 +587,35 @@ export default function App() {
     }
   };
 
+  // Derived Calculations
+  const dateStr = formatDateIndonesian(selectedDate);
+  const totalPrints = calculateTotalPrints(currentDayData.orders);
+  const totalIncome = calculateTotalIncome(currentDayData.incomes);
+  const lowStockCount = Object.values(currentDayData.stockCondition).filter((v) => v === 'Kurang').length;
+  const boothIssuesCount = Object.values(currentDayData.boothCondition).filter((v) => v === 'Masalah').length;
+  const hasIssues = boothIssuesCount > 0 || lowStockCount > 0 || currentDayData.issues.length > 0;
+
+  // Monthly summary calculations
+  const monthlySummary = useMemo(() => {
+    return calculateMonthlySummary(selectedMonth, reportsMap);
+  }, [selectedMonth, reportsMap]);
+
+  // WhatsApp Message for Current Date
+  const waMessage = useMemo(() => {
+    return buildWhatsAppMessage({
+      dateStr,
+      settings,
+      orders: currentDayData.orders,
+      incomes: currentDayData.incomes,
+      issues: currentDayData.issues,
+      purchases: currentDayData.purchases,
+      notes: currentDayData.notes,
+      boothCondition: currentDayData.boothCondition,
+      stockCondition: currentDayData.stockCondition,
+      customFrames: currentDayData.customFrames,
+    });
+  }, [dateStr, settings, currentDayData]);
+
   // Export Daily PDF (Download)
   const handleExportDailyPdf = async () => {
     if (!pdfDailyTemplateRef.current) return;
@@ -621,7 +650,8 @@ export default function App() {
       const res = await shareReportPdf(
         pdfDailyTemplateRef.current,
         filename,
-        `Laporan Harian ${settings.boothName} (${dateStr})`
+        `Laporan Harian ${settings.boothName} (${dateStr})`,
+        waMessage
       );
 
       if (res.success) {
@@ -701,32 +731,6 @@ export default function App() {
     }
   };
 
-  // Monthly summary calculations
-  const monthlySummary = useMemo(() => {
-    return calculateMonthlySummary(selectedMonth, reportsMap);
-  }, [selectedMonth, reportsMap]);
-
-  // WhatsApp Message for Current Date
-  const dateStr = formatDateIndonesian(selectedDate);
-  const waMessage = buildWhatsAppMessage({
-    dateStr,
-    settings,
-    orders: currentDayData.orders,
-    incomes: currentDayData.incomes,
-    issues: currentDayData.issues,
-    purchases: currentDayData.purchases,
-    notes: currentDayData.notes,
-    boothCondition: currentDayData.boothCondition,
-    stockCondition: currentDayData.stockCondition,
-    customFrames: currentDayData.customFrames,
-  });
-
-  const totalPrints = calculateTotalPrints(currentDayData.orders);
-  const totalIncome = calculateTotalIncome(currentDayData.incomes);
-  const lowStockCount = Object.values(currentDayData.stockCondition).filter((v) => v === 'Kurang').length;
-  const boothIssuesCount = Object.values(currentDayData.boothCondition).filter((v) => v === 'Masalah').length;
-  const hasIssues = boothIssuesCount > 0 || lowStockCount > 0 || currentDayData.issues.length > 0;
-
   // Scroll to custom frame
   const handleScrollToCustomFrame = () => {
     if (viewMode !== 'daily') setViewMode('daily');
@@ -761,7 +765,7 @@ export default function App() {
       )}
 
       {/* Main Container */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-5">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-5 no-print">
         {/* Header with Date Picker, Mode Switch & Logout */}
         <Header
           dateStr={dateStr}
@@ -1110,6 +1114,11 @@ export default function App() {
 
       {/* Offscreen PDF Printable Document Template - Daily */}
       <div
+        className={
+          viewMode === 'daily'
+            ? 'print:static print:block print:opacity-100 print:pointer-events-auto print:w-full print:max-w-full'
+            : 'print:hidden'
+        }
         style={{
           position: 'fixed',
           top: 0,
@@ -1141,6 +1150,11 @@ export default function App() {
 
       {/* Offscreen PDF Printable Document Template - Monthly with Graph */}
       <div
+        className={
+          viewMode === 'monthly'
+            ? 'print:static print:block print:opacity-100 print:pointer-events-auto print:w-full print:max-w-full'
+            : 'print:hidden'
+        }
         style={{
           position: 'fixed',
           top: 0,

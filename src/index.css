@@ -72,14 +72,55 @@
 }
 
 @media print {
-  body {
-    background-color: #ffffff !important;
-    color: #0f172a !important;
+  @page {
+    size: A4 portrait;
+    margin: 8mm;
   }
-  .no-print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .no-print,
+  button,
+  nav,
+  header,
+  footer,
+  .sidebar {
     display: none !important;
   }
   .print-only {
     display: block !important;
+  }
+  .print-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  /* Kunci layout grid/flex agar tidak pecah di browser HP */
+  .grid {
+    display: block !important;
+  }
+  .grid > div {
+    width: 100% !important;
+    margin-bottom: 12px !important;
+    page-break-inside: avoid;
+  }
+  img {
+    max-width: 100% !important;
+    height: auto !important;
+    page-break-inside: avoid;
+  }
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: avoid;
+  }
+  tr {
+    page-break-inside: avoid;
   }
 }

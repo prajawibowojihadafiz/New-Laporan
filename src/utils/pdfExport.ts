@@ -6,26 +6,39 @@ import { jsPDF } from 'jspdf';
  * (standard on modern mobile devices: Chrome Android, Safari iOS, etc.)
  */
 export function isWebShareSupported(): boolean {
-  if (typeof navigator === 'undefined' || !navigator.share || !navigator.canShare) {
+  if (typeof navigator === 'undefined' || !navigator.share) {
     return false;
   }
-  try {
-    const testFile = new File(['test'], 'test.pdf', { type: 'application/pdf' });
-    return navigator.canShare({ files: [testFile] });
-  } catch {
-    return false;
-  }
+  return true;
+}
+
+/**
+ * Helper to ensure all images in an element are completely loaded before rendering canvas
+ */
+async function waitForImagesToLoad(element: HTMLElement): Promise<void> {
+  const images = Array.from(element.querySelectorAll('img'));
+  const promises = images.map((img) => {
+    if (img.complete) return Promise.resolve();
+    return new Promise<void>((resolve) => {
+      img.onload = () => resolve();
+      img.onerror = () => resolve();
+    });
+  });
+  await Promise.all(promises);
 }
 
 /**
  * Render an HTML element to a jsPDF instance with mobile-proof layout clamping.
- * Forces the cloned DOM to an exact 800px desktop canvas width so that
- * mobile viewports (e.g. 360px - 412px) never compress, warp, or wrap lines messily.
+ * Forces the cloned DOM to an exact 800px desktop canvas width and windowWidth: 1024
+ * so that mobile viewports (e.g. 360px - 412px) never compress, warp, or wrap lines messily.
  */
 async function buildPdfFromElement(
   element: HTMLElement,
   targetWidth: number = 800
 ): Promise<{ pdf: jsPDF; canvas: HTMLCanvasElement }> {
+  // Wait for any images to settle
+  await waitForImagesToLoad(element);
+
   const canvas = await html2canvas(element, {
     scale: 2,
     useCORS: true,
@@ -45,7 +58,7 @@ async function buildPdfFromElement(
       clonedDoc.body.style.padding = '0';
       clonedDoc.body.style.overflow = 'visible';
 
-      // Ensure target element is fixed to targetWidth and placed at (0,0) in normal flow
+      // Ensure target element is fixed to targetWidth and placed in normal flow
       clonedEl.style.position = 'static';
       clonedEl.style.left = '0';
       clonedEl.style.top = '0';
@@ -72,7 +85,7 @@ async function buildPdfFromElement(
     },
   });
 
-  const imgData = canvas.toDataURL('image/jpeg', 0.98);
+  const imgData = canvas.toDataURL('image/jpeg', 0.95);
   const pdf = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -133,14 +146,15 @@ export interface SharePdfResult {
 export async function shareReportPdf(
   element: HTMLElement,
   filename: string = 'Laporan-Photobooth.pdf',
-  shareTitle: string = 'Laporan Operasional Photobooth'
+  shareTitle: string = 'Laporan Operasional Photobooth',
+  summaryText?: string
 ): Promise<SharePdfResult> {
   try {
     const { pdf } = await buildPdfFromElement(element);
     const pdfBlob = pdf.output('blob');
     const pdfFile = new File([pdfBlob], filename, { type: 'application/pdf' });
 
-    // Check if navigator.share with files is supported
+    // 1. Try sharing file via navigator.share (Mobile Chrome, Safari, etc.)
     if (
       typeof navigator !== 'undefined' &&
       navigator.share &&
@@ -151,7 +165,9 @@ export async function shareReportPdf(
         await navigator.share({
           files: [pdfFile],
           title: shareTitle,
-          text: `Berikut adalah berkas PDF ${shareTitle} (${filename}).`,
+          text: summaryText
+            ? `${shareTitle}\n\n${summaryText}`
+            : `Berikut adalah berkas PDF ${shareTitle} (${filename}).`,
         });
         return {
           success: true,
@@ -173,18 +189,35 @@ export async function shareReportPdf(
         return {
           success: true,
           method: 'download',
-          message: 'Berbagi tidak berhasil, berkas PDF diunduh otomatis.',
+          message: 'Berbagi langsung tidak selesai, berkas PDF diunduh otomatis.',
         };
       }
-    } else {
-      // Device/browser does not support file sharing (e.g. desktop PC)
-      pdf.save(filename);
-      return {
-        success: true,
-        method: 'download',
-        message: 'Peramban tidak mendukung berbagi langsung. Berkas PDF telah diunduh!',
-      };
     }
+
+    // 2. If file sharing is not supported, download the PDF and optionally offer text sharing
+    pdf.save(filename);
+
+    if (typeof navigator !== 'undefined' && navigator.share && summaryText) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: `Berkas PDF telah diunduh (${filename}).\n\n${summaryText}`,
+        });
+        return {
+          success: true,
+          method: 'share',
+          message: 'Berkas PDF diunduh & ringkasan teks dibagikan!',
+        };
+      } catch {
+        // Ignored, file already downloaded
+      }
+    }
+
+    return {
+      success: true,
+      method: 'download',
+      message: 'Peramban tidak mendukung berbagi file langsung. Berkas PDF telah diunduh!',
+    };
   } catch (err) {
     console.error('Failed to share PDF:', err);
     window.print();

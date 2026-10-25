@@ -69,6 +69,8 @@ export interface PhotoItem {
   id: string;
   url: string;
   name: string;
+  timestamp?: string;
+  caption?: string;
 }
 
 export interface DayReportData {

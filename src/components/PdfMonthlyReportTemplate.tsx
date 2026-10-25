@@ -20,7 +20,7 @@ export const PdfMonthlyReportTemplate = React.forwardRef<
     <div
       ref={ref}
       id="pdf-monthly-report-document"
-      className="bg-white text-slate-900 p-8 mx-auto text-xs font-sans print:p-4"
+      className="bg-white text-slate-900 p-8 mx-auto text-xs font-sans print-container print:p-2"
       style={{
         width: '800px',
         minWidth: '800px',
