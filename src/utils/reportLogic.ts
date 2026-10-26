@@ -1,8 +1,13 @@
+export type OrderCategory = 'Foto' | 'Additional Print';
+
 export interface Order {
   id: string;
-  clientName: string;
-  prints: number;
+  category?: OrderCategory;
+  qty?: number;
   time?: string;
+  // Backwards compatibility with previous versions
+  clientName?: string;
+  prints?: number;
 }
 
 export interface Income {
@@ -172,8 +177,37 @@ export const DEFAULT_STOCK_CONDITION: StockCondition = {
   inkBox: 'OK',
 };
 
+export function getOrderCategory(order: Order): OrderCategory {
+  if (order.category === 'Additional Print' || order.category === 'Foto') {
+    return order.category;
+  }
+  return 'Foto';
+}
+
+export function getOrderQty(order: Order): number {
+  if (typeof order.qty === 'number' && !isNaN(order.qty)) {
+    return order.qty;
+  }
+  if (typeof order.prints === 'number' && !isNaN(order.prints)) {
+    return order.prints;
+  }
+  return 1;
+}
+
+export function calculateTotalFoto(orders: Order[]): number {
+  return orders.reduce((sum, order) => {
+    return getOrderCategory(order) === 'Foto' ? sum + getOrderQty(order) : sum;
+  }, 0);
+}
+
+export function calculateTotalAdditionalPrint(orders: Order[]): number {
+  return orders.reduce((sum, order) => {
+    return getOrderCategory(order) === 'Additional Print' ? sum + getOrderQty(order) : sum;
+  }, 0);
+}
+
 export function calculateTotalPrints(orders: Order[]): number {
-  return orders.reduce((sum, order) => sum + (Number(order.prints) || 0), 0);
+  return orders.reduce((sum, order) => sum + getOrderQty(order), 0);
 }
 
 export function calculateTotalIncome(incomes: Income[]): number {
@@ -321,6 +355,8 @@ export function buildWhatsAppMessage(data: {
   stockCondition: StockCondition;
   customFrames?: CustomFrameQueueItem[];
 }): string {
+  const totalFoto = calculateTotalFoto(data.orders);
+  const totalAdditional = calculateTotalAdditionalPrint(data.orders);
   const totalPrints = calculateTotalPrints(data.orders);
   const totalIncome = calculateTotalIncome(data.incomes);
 
@@ -333,9 +369,11 @@ export function buildWhatsAppMessage(data: {
   lines.push(`----------------------------------------`);
 
   // Ringkasan Utama
-  lines.push(`📊 *RINGKASAN UTAMA*`);
-  lines.push(`• Total Orderan: ${data.orders.length} transaksi`);
-  lines.push(`• Total Biji (Print): *${totalPrints} print*`);
+  lines.push(`📊 *RINGKASAN ORDERAN & CETAK:*`);
+  lines.push(`• Total Transaksi Input: ${data.orders.length} kali`);
+  lines.push(`• Total Foto (Sesi): *${totalFoto} foto*`);
+  lines.push(`• Total Additional Print: *${totalAdditional} print*`);
+  lines.push(`• Total Keseluruhan: *${totalPrints} print*`);
   lines.push(`• Total Pemasukan: *${formatRupiah(totalIncome)}*`);
   if (data.customFrames && data.customFrames.length > 0) {
     const activeFrames = data.customFrames.filter((f) => f.status !== 'Selesai').length;
@@ -355,12 +393,16 @@ export function buildWhatsAppMessage(data: {
   lines.push(``);
 
   // Rincian Orderan
-  lines.push(`📸 *DAFTAR ORDERAN HARI INI:*`);
+  lines.push(`📸 *RINCIAN ORDERAN HARI INI:*`);
   if (data.orders.length === 0) {
     lines.push(`  _(Belum ada orderan)_`);
   } else {
     data.orders.forEach((ord, idx) => {
-      lines.push(`  ${idx + 1}. ${ord.clientName} (${ord.prints} print)`);
+      const cat = getOrderCategory(ord);
+      const qty = getOrderQty(ord);
+      const label = ord.clientName ? `${cat} - ${ord.clientName}` : cat;
+      const timeStr = ord.time ? ` (${ord.time})` : '';
+      lines.push(`  ${idx + 1}. [${label}] : ${qty} pcs${timeStr}`);
     });
   }
   lines.push(``);
@@ -569,8 +611,12 @@ export function generateRealisticMonthlyData(
     for (let o = 0; o < baseOrders; o++) {
       const client = commonClients[(d + o) % commonClients.length];
       const prints = [2, 4, 6, 8, 12][(o + d) % 5];
+      const isAdditional = o % 3 === 0;
+      const category: OrderCategory = isAdditional ? 'Additional Print' : 'Foto';
       orders.push({
         id: `gen-ord-${dateKey}-${o}`,
+        category,
+        qty: prints,
         clientName: `${client} #${o + 1}`,
         prints,
         time: `${12 + (o % 9)}:${(o * 17) % 60}`,

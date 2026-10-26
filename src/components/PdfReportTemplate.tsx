@@ -10,6 +10,10 @@ import {
   PhotoItem,
   CustomFrameQueueItem,
   calculateTotalPrints,
+  calculateTotalFoto,
+  calculateTotalAdditionalPrint,
+  getOrderCategory,
+  getOrderQty,
   calculateTotalIncome,
   formatRupiah,
   BOOTH_LABELS,
@@ -47,14 +51,10 @@ export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTempl
     },
     ref
   ) => {
+    const totalFoto = calculateTotalFoto(orders);
+    const totalAdditional = calculateTotalAdditionalPrint(orders);
     const totalPrints = calculateTotalPrints(orders);
     const totalIncome = calculateTotalIncome(incomes);
-
-    // Group photos into pairs for the 2-column solid HTML table
-    const photoPairs: PhotoItem[][] = [];
-    for (let i = 0; i < photos.length; i += 2) {
-      photoPairs.push(photos.slice(i, i + 2));
-    }
 
     return (
       <div
@@ -108,32 +108,38 @@ export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTempl
           </div>
         </div>
 
-        {/* 3 Key Metric Cards */}
+        {/* 4 Key Metric Cards */}
         <div
           className="mb-5"
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-            gap: '12px',
+            gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+            gap: '10px',
           }}
         >
-          <div className="p-3 bg-slate-50 border border-slate-300 rounded-xl">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-              Total Transaksi
+          <div className="p-2.5 bg-slate-50 border border-slate-300 rounded-xl">
+            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+              Total Foto (Sesi)
             </p>
-            <p className="text-lg font-black text-slate-900 mt-0.5">{orders.length} Order</p>
+            <p className="text-base font-black text-slate-900 mt-0.5">{totalFoto} Sesi</p>
           </div>
-          <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
-            <p className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider">
-              Total Biji / Print
+          <div className="p-2.5 bg-indigo-50 border border-indigo-200 rounded-xl">
+            <p className="text-[9px] font-bold text-indigo-700 uppercase tracking-wider">
+              Additional Print
             </p>
-            <p className="text-lg font-black text-indigo-900 mt-0.5">{totalPrints} Print</p>
+            <p className="text-base font-black text-indigo-900 mt-0.5">{totalAdditional} Print</p>
           </div>
-          <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
-            <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">
+          <div className="p-2.5 bg-purple-50 border border-purple-200 rounded-xl">
+            <p className="text-[9px] font-bold text-purple-700 uppercase tracking-wider">
+              Total Keseluruhan
+            </p>
+            <p className="text-base font-black text-purple-900 mt-0.5">{totalPrints} Cetak</p>
+          </div>
+          <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl">
+            <p className="text-[9px] font-bold text-emerald-700 uppercase tracking-wider">
               Total Pemasukan
             </p>
-            <p className="text-lg font-black text-emerald-900 mt-0.5">
+            <p className="text-base font-black text-emerald-900 mt-0.5">
               {formatRupiah(totalIncome)}
             </p>
           </div>
@@ -151,22 +157,22 @@ export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTempl
           {/* Orderan Solid Table */}
           <div className="border border-slate-300 rounded-xl overflow-hidden flex flex-col bg-white">
             <div className="bg-slate-100 px-3 py-2 border-b border-slate-300 font-bold text-slate-800 flex justify-between items-center text-[11px]">
-              <span>Daftar Orderan ({orders.length})</span>
-              <span className="text-[11px] font-extrabold text-indigo-700">
-                {totalPrints} Print
+              <span>Rincian Orderan ({orders.length})</span>
+              <span className="text-[10px] font-extrabold text-indigo-700">
+                {totalFoto} Foto • {totalAdditional} Add
               </span>
             </div>
             <table className="w-full table-fixed text-left text-[11px] border-collapse">
               <colgroup>
-                <col style={{ width: '38px' }} />
+                <col style={{ width: '32px' }} />
                 <col style={{ width: 'auto' }} />
-                <col style={{ width: '70px' }} />
+                <col style={{ width: '60px' }} />
               </colgroup>
               <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
                 <tr>
-                  <th className="py-1.5 px-3 font-semibold border-r border-slate-200">No</th>
-                  <th className="py-1.5 px-3 font-semibold border-r border-slate-200">Nama Klien / Order</th>
-                  <th className="py-1.5 px-3 text-right font-semibold">Print</th>
+                  <th className="py-1.5 px-2.5 font-semibold border-r border-slate-200">No</th>
+                  <th className="py-1.5 px-2.5 font-semibold border-r border-slate-200">Kategori / Keterangan</th>
+                  <th className="py-1.5 px-2.5 text-right font-semibold">Qty</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -177,17 +183,35 @@ export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTempl
                     </td>
                   </tr>
                 ) : (
-                  orders.map((ord, idx) => (
-                    <tr key={ord.id} className="hover:bg-slate-50/50">
-                      <td className="py-1.5 px-3 text-slate-400 border-r border-slate-100">{idx + 1}</td>
-                      <td className="py-1.5 px-3 font-medium text-slate-800 truncate border-r border-slate-100">
-                        {ord.clientName}
-                      </td>
-                      <td className="py-1.5 px-3 text-right font-bold text-slate-900">
-                        {ord.prints}
-                      </td>
-                    </tr>
-                  ))
+                  orders.map((ord, idx) => {
+                    const cat = getOrderCategory(ord);
+                    const qty = getOrderQty(ord);
+                    const isAdditional = cat === 'Additional Print';
+                    return (
+                      <tr key={ord.id} className="hover:bg-slate-50/50">
+                        <td className="py-1.5 px-2.5 text-slate-400 border-r border-slate-100 text-[10px]">{idx + 1}</td>
+                        <td className="py-1.5 px-2.5 border-r border-slate-100">
+                          <span
+                            className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold mr-1.5 ${
+                              isAdditional
+                                ? 'bg-indigo-100 text-indigo-800 border border-indigo-200'
+                                : 'bg-rose-100 text-rose-800 border border-rose-200'
+                            }`}
+                          >
+                            {cat}
+                          </span>
+                          {ord.clientName && ord.clientName !== cat && (
+                            <span className="text-slate-700 font-medium text-[10px]">
+                              {ord.clientName}
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-1.5 px-2.5 text-right font-bold text-slate-900">
+                          {qty}
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -480,93 +504,83 @@ export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTempl
           </div>
         )}
 
-        {/* TABEL DOKUMENTASI FOTO KEGIATAN (SOLID HTML TABLE DENGAN GRID 2-KOLOM & RESIZE OTOMATIS) */}
-        <div className="border border-slate-300 rounded-xl overflow-hidden mb-5 bg-white">
+        {/* TABEL DOKUMENTASI FOTO KEGIATAN (RESPONSIF GRID KHUSUS BANYAK FOTO) */}
+        <div className="tabel-foto-kegiatan foto-kegiatan-container card-block border border-slate-300 rounded-xl overflow-hidden mb-5 bg-white">
           <div className="bg-slate-100 px-3.5 py-2.5 border-b border-slate-300 font-extrabold text-slate-800 flex justify-between items-center text-[11px]">
             <span className="flex items-center gap-1.5">
               <span>📷</span> TABEL DOKUMENTASI FOTO KEGIATAN ({photos.length} Foto)
             </span>
             <span className="text-[10px] font-semibold text-slate-500">
-              Format Ringan & Resolusi Optimal
+              Grid Kompak ({photos.length} item) • Ringan & Rapi
             </span>
           </div>
 
-          <table className="w-full table-fixed border-collapse">
-            <tbody>
-              {photos.length === 0 ? (
-                <tr>
-                  <td className="py-6 px-4 text-center text-slate-400 italic text-xs">
-                    Belum ada dokumentasi foto kegiatan yang dilampirkan untuk tanggal ini.
-                  </td>
-                </tr>
-              ) : (
-                photoPairs.map((pair, rowIdx) => (
-                  <tr key={rowIdx} className="border-b border-slate-200 last:border-b-0">
-                    {pair.map((photo, colIdx) => {
-                      const photoNum = rowIdx * 2 + colIdx + 1;
-                      return (
-                        <td
-                          key={photo.id}
-                          className="w-1/2 p-3 align-top border-r border-slate-200 last:border-r-0"
-                          style={{ width: '50%' }}
-                        >
-                          <div className="border border-slate-300 rounded-xl p-2.5 bg-slate-50/50 flex flex-col">
-                            {/* Compressed & resized photo viewport (html2canvas compatible) */}
-                            <div
-                              style={{
-                                width: '100%',
-                                height: '176px',
-                                overflow: 'hidden',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                backgroundColor: '#f1f5f9',
-                                border: '1px solid #cbd5e1',
-                                borderRadius: '8px',
-                                marginBottom: '8px',
-                              }}
-                            >
-                              <img
-                                src={photo.url}
-                                alt={photo.name}
-                                style={{
-                                  maxWidth: '100%',
-                                  maxHeight: '176px',
-                                  width: 'auto',
-                                  height: 'auto',
-                                  display: 'block',
-                                  margin: '0 auto',
-                                }}
-                              />
-                            </div>
-                            <div className="flex items-center justify-between gap-1 text-[10px]">
-                              <span className="font-bold text-slate-800 truncate" title={photo.name}>
-                                Foto #{photoNum}: {photo.name}
-                              </span>
-                              <span className="text-slate-600 shrink-0 font-medium bg-white px-2 py-0.5 rounded border border-slate-300">
-                                {photo.timestamp || dateStr}
-                              </span>
-                            </div>
-                          </div>
-                        </td>
-                      );
-                    })}
-                    {/* Empty cell if row has only 1 photo */}
-                    {pair.length === 1 && (
-                      <td
-                        className="w-1/2 p-3 bg-slate-50/30 text-center text-slate-300 italic text-[11px] align-middle"
-                        style={{ width: '50%' }}
-                      >
-                        <div className="border border-dashed border-slate-200 rounded-xl p-8 text-slate-300">
-                          - Slot Foto Kosong -
-                        </div>
-                      </td>
-                    )}
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+          {photos.length === 0 ? (
+            <div className="py-6 px-4 text-center text-slate-400 italic text-xs">
+              Belum ada dokumentasi foto kegiatan yang dilampirkan untuk tanggal ini.
+            </div>
+          ) : (
+            <div
+              className="foto-grid p-3.5"
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
+                gap: '8px',
+              }}
+            >
+              {photos.map((photo, idx) => (
+                <div
+                  key={photo.id}
+                  className="foto-kegiatan-card card-block border border-slate-300 rounded-lg p-1.5 bg-slate-50/80 flex flex-col items-center"
+                  style={{
+                    breakInside: 'avoid',
+                    pageBreakInside: 'avoid',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  {/* Photo container constrained to max-width 130px, max-height 100px */}
+                  <div
+                    style={{
+                      width: '100%',
+                      height: '92px',
+                      overflow: 'hidden',
+                      borderRadius: '6px',
+                      backgroundColor: '#f1f5f9',
+                      border: '1px solid #cbd5e1',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <img
+                      src={photo.url}
+                      alt={photo.name}
+                      className="foto-kegiatan-img"
+                      style={{
+                        width: '100%',
+                        height: '92px',
+                        maxWidth: '130px',
+                        maxHeight: '100px',
+                        objectFit: 'cover',
+                        borderRadius: '6px',
+                        display: 'block',
+                        margin: '0 auto',
+                      }}
+                    />
+                  </div>
+                  {/* Neatly positioned caption below photo without obscuring image */}
+                  <div className="w-full mt-1.5 flex items-center justify-between text-[9px] gap-1">
+                    <span className="font-bold text-slate-800 truncate" title={photo.name}>
+                      #{idx + 1} {photo.name}
+                    </span>
+                    <span className="text-slate-500 font-semibold shrink-0 bg-white px-1 py-0.5 rounded border border-slate-200 text-[8px]">
+                      {photo.timestamp || dateStr}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Tanda Tangan / Signature Block */}

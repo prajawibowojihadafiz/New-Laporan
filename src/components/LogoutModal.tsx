@@ -56,10 +56,10 @@ export const LogoutModal: React.FC<LogoutModalProps> = ({
           </div>
 
           <h3 id="logout-modal-title" className="text-lg font-black text-white">
-            Keluar dari Sistem?
+            Kunci & Keluar Aplikasi?
           </h3>
           <p className="text-xs text-rose-300/70 mt-1 max-w-xs leading-relaxed">
-            Sesi aktif Anda akan diakhiri. Anda perlu memasukkan ID & Password untuk masuk kembali.
+            Sesi aktif Anda akan dikunci. Anda dapat membuka kembali aplikasi menggunakan kredensial dan PIN keamanan Anda.
           </p>
 
           {/* User Session Info Card */}

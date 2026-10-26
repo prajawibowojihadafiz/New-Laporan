@@ -9,13 +9,13 @@ import { PhotoItem } from './reportLogic';
  * ensuring photos are NEVER blank or lost.
  *
  * @param file The uploaded image File
- * @param maxWidth Max width in pixels (default 800px)
- * @param quality JPEG compression quality (0.0 to 1.0, default 0.75)
+ * @param maxWidth Max width in pixels (default 600px)
+ * @param quality JPEG compression quality (0.0 to 1.0, default 0.6)
  */
 export async function compressImageFile(
   file: File,
-  maxWidth = 800,
-  quality = 0.75
+  maxWidth = 500,
+  quality = 0.55
 ): Promise<string> {
   return new Promise((resolve) => {
     // If not an image, return empty string
@@ -105,8 +105,8 @@ export async function compressImageFile(
  */
 export async function compressDataUrl(
   src: string,
-  maxWidth = 800,
-  quality = 0.75
+  maxWidth = 500,
+  quality = 0.55
 ): Promise<string> {
   if (!src) return '';
 
@@ -166,8 +166,8 @@ export async function compressDataUrl(
  */
 export async function compressPhotosList(
   photos: PhotoItem[],
-  maxWidth = 800,
-  quality = 0.75
+  maxWidth = 500,
+  quality = 0.55
 ): Promise<PhotoItem[]> {
   if (!photos || photos.length === 0) return [];
 

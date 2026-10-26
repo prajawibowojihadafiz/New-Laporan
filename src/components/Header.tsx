@@ -233,18 +233,18 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="hidden sm:inline">Pengaturan</span>
           </button>
 
-          {/* Logout */}
+          {/* Lock App / Logout */}
           {onLogout && (
             <button
               id="logout-button"
               data-testid="logout-button"
               onClick={onLogout}
               className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 hover:text-rose-100 text-xs sm:text-sm font-semibold rounded-xl border border-rose-500/30 transition cursor-pointer"
-              title="Keluar dari akun (Logout)"
-              aria-label="Logout"
+              title="Kunci Aplikasi / Keluar Akun (Lock App)"
+              aria-label="Keluar / Lock App"
             >
               <LogOut className="w-4 h-4 text-rose-400" />
-              <span className="hidden sm:inline">Keluar</span>
+              <span>Keluar / Lock App</span>
             </button>
           )}
         </div>

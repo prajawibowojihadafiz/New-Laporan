@@ -14,30 +14,21 @@ export function isWebShareSupported(): boolean {
 
 /**
  * Helper to ensure all images in an element are completely loaded before rendering canvas
+ * Using Promise.all and naturalHeight checks as requested for many photos stability.
  */
 async function waitForImagesToLoad(element: HTMLElement): Promise<void> {
-  const images = Array.from(element.querySelectorAll('img'));
-  const promises = images.map(async (img) => {
-    if (img.complete && img.naturalWidth > 0) return;
-    if (img.decode) {
-      try {
-        await img.decode();
-        return;
-      } catch {
-        // Fallback to load event listener
-      }
-    }
-    return new Promise<void>((resolve) => {
-      if (img.complete && img.naturalWidth > 0) {
-        resolve();
-        return;
-      }
-      img.onload = () => resolve();
-      img.onerror = () => resolve();
-      setTimeout(resolve, 2000);
-    });
-  });
-  await Promise.all(promises);
+  const images = Array.from(element.querySelectorAll<HTMLImageElement>('.foto-kegiatan-img, img'));
+  await Promise.all(
+    images.map((img) => {
+      if (img.complete && img.naturalHeight !== 0) return Promise.resolve();
+      return new Promise<void>((resolve) => {
+        img.onload = () => resolve();
+        img.onerror = () => resolve();
+        // Safety timeout so slow or broken images don't block indefinitely
+        setTimeout(resolve, 3000);
+      });
+    })
+  );
 }
 
 /**
@@ -49,8 +40,11 @@ async function buildPdfFromElement(
   element: HTMLElement,
   targetWidth: number = 800
 ): Promise<{ pdf: jsPDF; canvas: HTMLCanvasElement }> {
-  // Wait for all images to settle and decode in DOM
+  // 1. Wait for all images to settle and decode in DOM 100%
   await waitForImagesToLoad(element);
+
+  // 2. Explicit safe delay (800ms) right before html2canvas is called to allow mobile browser GPU & DOM painting
+  await new Promise((resolve) => setTimeout(resolve, 800));
 
   const canvas = await html2canvas(element, {
     scale: 2,
@@ -107,6 +101,41 @@ async function buildPdfFromElement(
         parent.style.opacity = '1';
         parent.style.width = `${targetWidth}px`;
         parent = parent.parentElement;
+      }
+
+      // Pagebreak avoidance logic: prevents .tabel-foto-kegiatan, .foto-kegiatan-card, etc.
+      // from being sliced across A4 page boundaries (at 800px width, 1 A4 page is ~1131px)
+      try {
+        const a4PageHeightPx = Math.round(targetWidth * (297 / 210));
+        const rootRect = clonedEl.getBoundingClientRect();
+        const avoidSelectors = [
+          '.tabel-foto-kegiatan',
+          '.foto-kegiatan-container',
+          '.foto-kegiatan-card',
+          'tr',
+          '.card-block',
+        ];
+
+        const avoidElements = Array.from(clonedEl.querySelectorAll<HTMLElement>(avoidSelectors.join(', ')));
+
+        avoidElements.forEach((el) => {
+          const elRect = el.getBoundingClientRect();
+          const topRelativeToRoot = elRect.top - rootRect.top;
+          const bottomRelativeToRoot = elRect.bottom - rootRect.top;
+
+          for (let page = 1; page <= 5; page++) {
+            const pageBoundaryY = page * a4PageHeightPx;
+            // If element starts before the page boundary but extends past it, push it to next page
+            if (topRelativeToRoot < pageBoundaryY && bottomRelativeToRoot > pageBoundaryY) {
+              const pushDown = pageBoundaryY - topRelativeToRoot + 20;
+              const currentMarginTop = parseInt(el.style.marginTop || '0', 10) || 0;
+              el.style.marginTop = `${currentMarginTop + pushDown}px`;
+              break;
+            }
+          }
+        });
+      } catch (pageBreakErr) {
+        console.warn('Page break calculation fallback:', pageBreakErr);
       }
     },
   });

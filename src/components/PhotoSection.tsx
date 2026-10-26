@@ -28,8 +28,8 @@ export const PhotoSection: React.FC<PhotoSectionProps> = ({
 
     try {
       const compressionPromises = files.map(async (file) => {
-        // Compress and resize image to max 500px width with 0.65 quality
-        const compressedUrl = await compressImageFile(file, 500, 0.65);
+        // Compress and resize image automatically to max 600px width with 0.6 quality
+        const compressedUrl = await compressImageFile(file, 600, 0.6);
         return {
           id: `photo-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
           url: compressedUrl || '',

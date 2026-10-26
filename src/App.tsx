@@ -50,6 +50,7 @@ import {
 } from './firebase';
 import {
   Order,
+  OrderCategory,
   Income,
   Issue,
   PurchaseItem,
@@ -66,6 +67,8 @@ import {
   DEFAULT_BOOTH_CONDITION,
   DEFAULT_STOCK_CONDITION,
   calculateTotalPrints,
+  calculateTotalFoto,
+  calculateTotalAdditionalPrint,
   calculateTotalIncome,
   formatDateIndonesian,
   formatRupiah,
@@ -118,8 +121,8 @@ export default function App() {
     const initialToday: DayReportData = {
       date: todayKey,
       orders: [
-        { id: 'sample-ord-1', clientName: 'Birthday Amanda (Paket Strip)', prints: 12, time: '13:40' },
-        { id: 'sample-ord-2', clientName: 'Couple Photo Sarah & Reza', prints: 4, time: '15:15' },
+        { id: 'sample-ord-1', category: 'Foto', qty: 12, clientName: 'Birthday Amanda (Paket Strip)', prints: 12, time: '13:40' },
+        { id: 'sample-ord-2', category: 'Additional Print', qty: 4, clientName: 'Cetak Ulang Sarah & Reza', prints: 4, time: '15:15' },
       ],
       customFrames: [
         {
@@ -341,20 +344,22 @@ export default function App() {
   };
 
   // Order Handlers
-  const handleAddOrder = (clientName: string, prints: number) => {
+  const handleAddOrder = (category: OrderCategory, qty: number, clientName?: string) => {
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     const newOrder: Order = {
       id: `ord-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      clientName,
-      prints,
+      category,
+      qty,
+      prints: qty,
+      clientName: clientName || category,
       time: timeStr,
     };
     updateCurrentDay((prev) => ({
       ...prev,
       orders: [newOrder, ...prev.orders],
     }));
-    showToast(`Order "${clientName}" (${prints} print) ditambahkan!`);
+    showToast(`Order "${category}" (${qty} pcs) berhasil dicatat!`);
   };
 
   const handleRemoveOrder = (id: string) => {
@@ -589,6 +594,8 @@ export default function App() {
 
   // Derived Calculations
   const dateStr = formatDateIndonesian(selectedDate);
+  const totalFoto = calculateTotalFoto(currentDayData.orders);
+  const totalAdditional = calculateTotalAdditionalPrint(currentDayData.orders);
   const totalPrints = calculateTotalPrints(currentDayData.orders);
   const totalIncome = calculateTotalIncome(currentDayData.incomes);
   const lowStockCount = Object.values(currentDayData.stockCondition).filter((v) => v === 'Kurang').length;
@@ -878,6 +885,8 @@ export default function App() {
             {/* Quick Stats Bar for selected date */}
             <StatsBar
               totalOrders={currentDayData.orders.length}
+              totalFoto={totalFoto}
+              totalAdditional={totalAdditional}
               totalPrints={totalPrints}
               totalIncome={totalIncome}
               hasIssues={hasIssues}

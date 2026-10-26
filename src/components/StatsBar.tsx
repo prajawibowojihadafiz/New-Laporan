@@ -1,9 +1,11 @@
 import React from 'react';
-import { Layers, Printer, Wallet, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Layers, Printer, Wallet, AlertTriangle, CheckCircle2, Camera } from 'lucide-react';
 import { formatRupiah } from '../utils/reportLogic';
 
 interface StatsBarProps {
   totalOrders: number;
+  totalFoto?: number;
+  totalAdditional?: number;
   totalPrints: number;
   totalIncome: number;
   hasIssues: boolean;
@@ -13,6 +15,8 @@ interface StatsBarProps {
 
 export const StatsBar: React.FC<StatsBarProps> = ({
   totalOrders,
+  totalFoto = 0,
+  totalAdditional = 0,
   totalPrints,
   totalIncome,
   hasIssues,
@@ -20,17 +24,23 @@ export const StatsBar: React.FC<StatsBarProps> = ({
   lowStockCount,
 }) => {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-5">
-      {/* 1. Total Orders */}
-      <div className="glass-maroon-card p-4 rounded-3xl border border-rose-500/25 shadow-xl shadow-black/40 flex items-center gap-3.5">
-        <div className="w-12 h-12 rounded-2xl bg-[#1b0308] border border-rose-500/25 text-rose-300 flex items-center justify-center shrink-0 shadow-inner">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-5">
+      {/* 1. Total Orders with 2-Category Calculation Breakdown */}
+      <div className="glass-maroon-card p-4 rounded-3xl border border-rose-500/25 shadow-xl shadow-black/40 flex items-start gap-3.5">
+        <div className="w-12 h-12 rounded-2xl bg-[#1b0308] border border-rose-500/25 text-rose-300 flex items-center justify-center shrink-0 shadow-inner mt-0.5">
           <Layers className="w-5 h-5 text-rose-400" />
         </div>
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="text-[11px] font-bold text-rose-300/60 uppercase tracking-wider">Total Orderan</p>
           <div className="flex items-baseline gap-1 mt-0.5">
             <span className="text-xl sm:text-2xl font-black text-white">{totalOrders}</span>
-            <span className="text-xs font-semibold text-rose-300/60">order</span>
+            <span className="text-xs font-semibold text-rose-300/60">Order</span>
+          </div>
+          {/* Sub-keterangan rincian kalkulasi: Foto Sesi Utuh: A | Additional Print: B */}
+          <div className="mt-1.5 text-[10.5px] font-medium text-rose-200/90 bg-[#160206]/90 px-2.5 py-1 rounded-xl border border-rose-500/20 leading-tight">
+            <span>Foto Sesi Utuh: <strong className="text-rose-300 font-bold">{totalFoto}</strong></span>
+            <span className="text-rose-500/40 mx-1">|</span>
+            <span>Additional Print: <strong className="text-indigo-300 font-bold">{totalAdditional}</strong></span>
           </div>
         </div>
       </div>
@@ -46,6 +56,9 @@ export const StatsBar: React.FC<StatsBarProps> = ({
             <span className="text-xl sm:text-2xl font-black text-rose-400">{totalPrints}</span>
             <span className="text-xs font-semibold text-rose-300/60">lembar</span>
           </div>
+          <p className="text-[10px] text-rose-300/60 font-medium mt-1">
+            Akumulasi semua cetakan foto
+          </p>
         </div>
       </div>
 
@@ -61,6 +74,9 @@ export const StatsBar: React.FC<StatsBarProps> = ({
               {formatRupiah(totalIncome)}
             </span>
           </div>
+          <p className="text-[10px] text-rose-300/60 font-medium mt-1">
+            Tunai & QRIS terkumpul
+          </p>
         </div>
       </div>
 
@@ -90,6 +106,9 @@ export const StatsBar: React.FC<StatsBarProps> = ({
               </span>
             )}
           </div>
+          <p className="text-[10px] text-rose-300/60 font-medium mt-1">
+            Hardware & stok bahan
+          </p>
         </div>
       </div>
     </div>

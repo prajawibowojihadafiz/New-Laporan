@@ -123,4 +123,52 @@
   tr {
     page-break-inside: avoid;
   }
+  .foto-kegiatan-card,
+  .foto-kegiatan-container,
+  .tabel-foto-kegiatan,
+  tr,
+  .card-block {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  .tabel-foto-kegiatan {
+    page-break-before: auto;
+    break-inside: avoid !important;
+  }
+  .foto-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8px !important;
+    page-break-inside: avoid;
+  }
+  .foto-kegiatan-img {
+    width: 100% !important;
+    height: 90px !important;
+    object-fit: cover !important;
+    border-radius: 6px !important;
+  }
+}
+
+.foto-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+}
+
+.foto-kegiatan-img {
+  width: 100%;
+  max-width: 130px;
+  max-height: 100px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+
+.animate-shake {
+  animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
