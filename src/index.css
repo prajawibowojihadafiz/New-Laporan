@@ -71,6 +71,14 @@
   background: rgba(244, 63, 94, 0.5);
 }
 
+/* Page break avoidance rules for PDF generator and print */
+.no-break,
+.page-break-inside-avoid {
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+  page-break-after: auto !important;
+}
+
 @media print {
   @page {
     size: A4 portrait;
@@ -115,22 +123,34 @@
     height: auto !important;
     page-break-inside: avoid;
   }
+  /* Aturan native page break pada tabel */
   table {
-    width: 100% !important;
-    border-collapse: collapse !important;
-    page-break-inside: avoid;
+    page-break-inside: auto !important;
   }
   tr {
-    page-break-inside: avoid;
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
+    break-inside: avoid !important;
   }
+  thead {
+    display: table-header-group !important;
+  }
+  tfoot {
+    display: table-footer-group !important;
+  }
+  /* Cegah pemotongan di dalam elemen kartu, baris tabel, dan gambar */
+  tbody, td, th,
+  .no-break,
+  .page-break-inside-avoid,
   .foto-kegiatan-card,
   .foto-kegiatan-container,
   .tabel-foto-kegiatan,
-  tr,
-  .card-block {
+  .card, .card-block,
+  .signature-block {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
+  /* Pindahkan otomatis ke halaman baru jika area halaman 1 sudah tidak cukup */
   .tabel-foto-kegiatan {
     page-break-before: auto;
     break-inside: avoid !important;

@@ -53,7 +53,7 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
         <div className="text-right">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-950/80 text-rose-300 font-extrabold text-xs rounded-full border border-rose-700/40">
             <Layers className="w-3.5 h-3.5 text-rose-400" />
-            <span>Total: {totalKeseluruhan} Cetak</span>
+            <span>Total Orderan: {totalKeseluruhan} Foto</span>
           </span>
         </div>
       </div>
@@ -206,7 +206,7 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
       {/* Orders List / Rekap Tersimpan */}
       <div className="flex-1 overflow-hidden flex flex-col">
         <div className="flex items-center justify-between text-xs text-rose-300/60 font-semibold mb-2 px-1">
-          <span>Daftar Orderan Masuk ({orders.length} input)</span>
+          <span>Daftar Orderan Masuk ({totalKeseluruhan} foto • {orders.length} entri)</span>
           <span>Jumlah Order</span>
         </div>
 

@@ -380,6 +380,38 @@ export async function resetAllFirestoreReports(): Promise<boolean> {
 }
 
 /**
+ * Reset / Delete reports in Firestore for a specific date range [startDate, endDate]
+ */
+export async function resetDateRangeReports(
+  startDate: string,
+  endDate: string
+): Promise<{ success: boolean; deletedDates: string[] }> {
+  const path = 'reports';
+  try {
+    const reportsCol = collection(db, path);
+    const snapshot = await getDocs(reportsCol);
+    const batch = writeBatch(db);
+    const deletedDates: string[] = [];
+
+    snapshot.forEach((d) => {
+      const docDate = d.id;
+      if (docDate >= startDate && docDate <= endDate) {
+        batch.delete(d.ref);
+        deletedDates.push(docDate);
+      }
+    });
+
+    if (deletedDates.length > 0) {
+      await batch.commit();
+    }
+    return { success: true, deletedDates };
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+    return { success: false, deletedDates: [] };
+  }
+}
+
+/**
  * Helper to sign in with Google Popup
  */
 export async function signInWithGoogle(): Promise<User | null> {

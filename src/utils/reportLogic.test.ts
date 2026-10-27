@@ -2,6 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   calculateTotalPrints,
+  calculateTotalOrders,
+  calculateTotalFoto,
+  calculateTotalAdditionalPrint,
   calculateTotalIncome,
   formatRupiah,
   parseRupiahInput,
@@ -26,6 +29,16 @@ test('calculateTotalPrints correctly sums print quantities', () => {
   ];
   assert.equal(calculateTotalPrints(orders), 175);
   assert.equal(calculateTotalPrints([]), 0);
+});
+
+test('calculateTotalOrders follows total foto semua (Foto + Additional Print)', () => {
+  const orders: Order[] = [
+    { id: '1', category: 'Foto', qty: 12 },
+    { id: '2', category: 'Additional Print', qty: 4 },
+  ];
+  assert.equal(calculateTotalFoto(orders), 12);
+  assert.equal(calculateTotalAdditionalPrint(orders), 4);
+  assert.equal(calculateTotalOrders(orders), 16);
 });
 
 test('calculateTotalIncome correctly sums income amounts', () => {
@@ -190,4 +203,32 @@ test('calculateMonthlySummary aggregates monthly sales and tracks highest day an
   assert.equal(summary.paymentBreakdown[0].source, 'QRIS');
   assert.equal(summary.paymentBreakdown[0].amount, 500000);
 });
+
+test('date range reset correctly removes targeted dates and keeps outside dates untouched', () => {
+  const reportsMap: Record<string, any> = {
+    '2026-10-10': { orders: [{ id: '1', prints: 10 }] },
+    '2026-10-15': { orders: [{ id: '2', prints: 20 }] },
+    '2026-10-20': { orders: [{ id: '3', prints: 30 }] },
+    '2026-10-25': { orders: [{ id: '4', prints: 40 }] },
+  };
+
+  const startDate = '2026-10-12';
+  const endDate = '2026-10-22';
+
+  const updatedMap: Record<string, any> = {};
+  for (const [dateKey, data] of Object.entries(reportsMap)) {
+    if (dateKey >= startDate && dateKey <= endDate) {
+      // In range: deleted
+      continue;
+    }
+    updatedMap[dateKey] = data;
+  }
+
+  assert.ok(updatedMap['2026-10-10'], 'Date before range should be kept');
+  assert.ok(updatedMap['2026-10-25'], 'Date after range should be kept');
+  assert.strictEqual(updatedMap['2026-10-15'], undefined, 'Date in range should be deleted');
+  assert.strictEqual(updatedMap['2026-10-20'], undefined, 'Date in range should be deleted');
+  assert.equal(Object.keys(updatedMap).length, 2);
+});
+
 

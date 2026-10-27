@@ -60,6 +60,7 @@ export const ResetAllModal: React.FC<ResetAllModalProps> = ({
             <li>Seluruh rincian pemasukan uang kas & QRIS.</li>
             <li>Antrean custom frame, kendala operasional, dan checklist stok.</li>
             <li>Data di penyimpanan browser HP/Laptop <strong className="text-rose-300">serta cloud Firebase Realtime</strong>.</li>
+            <li>Aplikasi kembali ke status kosong bersih (0 order) <strong className="text-emerald-400">tanpa data dummy/otomatis</strong>.</li>
           </ul>
         </div>
 

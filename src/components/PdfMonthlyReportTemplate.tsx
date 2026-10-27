@@ -150,7 +150,7 @@ export const PdfMonthlyReportTemplate = React.forwardRef<
               <col style={{ width: '100px' }} />
             </colgroup>
             <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
-              <tr>
+              <tr className="page-break-inside-avoid no-break">
                 <th className="py-1 px-2.5 font-semibold">Tgl</th>
                 <th className="py-1 px-2 font-semibold">Hari</th>
                 <th className="py-1 px-2 text-center font-semibold">Order</th>
@@ -160,7 +160,7 @@ export const PdfMonthlyReportTemplate = React.forwardRef<
             </thead>
             <tbody className="divide-y divide-slate-100">
               {summary.days.map((d) => (
-                <tr key={d.date}>
+                <tr key={d.date} className="page-break-inside-avoid no-break hover:bg-slate-50/50">
                   <td className="py-1 px-2.5 font-bold text-slate-800">{d.dayLabel}</td>
                   <td className="py-1 px-2 text-slate-500">{d.dayOfWeek}</td>
                   <td className="py-1 px-2 text-center text-slate-700">{d.ordersCount}</td>
@@ -177,7 +177,7 @@ export const PdfMonthlyReportTemplate = React.forwardRef<
         </div>
 
         {/* Payment Breakdown */}
-        <div className="border border-slate-200 rounded-xl p-3 bg-slate-50/50 flex flex-col justify-between">
+        <div className="card-block border border-slate-200 rounded-xl p-3 bg-slate-50/50 flex flex-col justify-between" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
           <div>
             <p className="font-bold text-slate-800 mb-2 pb-1 border-b border-slate-200">
               💳 Breakdown Pembayaran
@@ -205,11 +205,13 @@ export const PdfMonthlyReportTemplate = React.forwardRef<
 
       {/* Signature Block */}
       <div
-        className="pt-6 border-t border-slate-200 text-center"
+        className="signature-block card-block pt-6 border-t border-slate-200 text-center"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
           gap: '32px',
+          breakInside: 'avoid',
+          pageBreakInside: 'avoid',
         }}
       >
         <div>

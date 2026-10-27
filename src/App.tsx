@@ -33,6 +33,7 @@ import { NotesSection } from './components/NotesSection';
 import { MonthlyOverviewSection } from './components/MonthlyOverviewSection';
 import { SettingsModal } from './components/SettingsModal';
 import { ResetAllModal } from './components/ResetAllModal';
+import { ResetRangeModal } from './components/ResetRangeModal';
 import { WhatsAppPreviewModal } from './components/WhatsAppPreviewModal';
 import { PdfReportTemplate } from './components/PdfReportTemplate';
 import { PdfMonthlyReportTemplate } from './components/PdfMonthlyReportTemplate';
@@ -46,6 +47,7 @@ import {
   saveSettingsToFirestore,
   subscribeToSettings,
   resetAllFirestoreReports,
+  resetDateRangeReports,
   forceResyncAllData,
 } from './firebase';
 import {
@@ -107,46 +109,59 @@ export default function App() {
     return DEFAULT_SETTINGS;
   });
 
-  // Multi-day persistent store
+  // Multi-day persistent store (Murni inputan manual pengguna/admin, tanpa pengisian otomatis)
   const [reportsMap, setReportsMap] = useState<Record<string, DayReportData>>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_reports_map`);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Object.keys(parsed).length > 0) return parsed;
+        if (parsed && typeof parsed === 'object') {
+          // Bersihkan data dummy/sample jika masih ada dari sesi sebelumnya
+          const cleanMap: Record<string, DayReportData> = {};
+          let hadSample = false;
+          for (const [dKey, dayData] of Object.entries(parsed as Record<string, DayReportData>)) {
+            if (!dayData) continue;
+            const realOrders = (dayData.orders || []).filter(
+              (o) => !o.id?.startsWith('sample-') && !o.clientName?.includes('Birthday Amanda') && !o.clientName?.includes('Sarah & Reza')
+            );
+            const realIncomes = (dayData.incomes || []).filter((i) => !i.id?.startsWith('sample-'));
+            const realCustomFrames = (dayData.customFrames || []).filter((c) => !c.id?.startsWith('sample-'));
+            if (
+              realOrders.length !== (dayData.orders || []).length ||
+              realIncomes.length !== (dayData.incomes || []).length
+            ) {
+              hadSample = true;
+            }
+            cleanMap[dKey] = {
+              ...dayData,
+              orders: realOrders,
+              incomes: realIncomes,
+              customFrames: realCustomFrames,
+            };
+          }
+          if (hadSample) {
+            localStorage.setItem(`${STORAGE_KEY}_reports_map`, JSON.stringify(cleanMap));
+          }
+          return cleanMap;
+        }
       } catch {}
     }
 
-    // Initial realistic month seed so trend graphs immediately show data
-    const initialToday: DayReportData = {
+    // Default: Lembar kerja kosong bersih untuk hari ini (0 order, 0 pemasukan)
+    const blankToday: DayReportData = {
       date: todayKey,
-      orders: [
-        { id: 'sample-ord-1', category: 'Foto', qty: 12, clientName: 'Birthday Amanda (Paket Strip)', prints: 12, time: '13:40' },
-        { id: 'sample-ord-2', category: 'Additional Print', qty: 4, clientName: 'Cetak Ulang Sarah & Reza', prints: 4, time: '15:15' },
-      ],
-      customFrames: [
-        {
-          id: 'sample-cf-1',
-          clientName: 'Jessica & Kevin (Wedding)',
-          theme: 'Minimalist Monochrome + Logo Strip',
-          status: 'Proses Desain',
-          notes: 'Gunakan font Script, sertakan monogram JK',
-          time: '14:20',
-        },
-      ],
-      incomes: [
-        { id: 'sample-inc-1', source: 'QRIS', amount: 120000 },
-        { id: 'sample-inc-2', source: 'Cash', amount: 50000 },
-      ],
+      orders: [],
+      customFrames: [],
+      incomes: [],
       boothCondition: DEFAULT_BOOTH_CONDITION,
       stockCondition: DEFAULT_STOCK_CONDITION,
       issues: [],
       purchases: [],
       photos: [],
-      notes: 'Operasional booth berjalan tertib, ramai pengunjung dan antrean rapi.',
+      notes: '',
     };
 
-    return generateRealisticMonthlyData(todayKey.substring(0, 7), todayKey, initialToday);
+    return { [todayKey]: blankToday };
   });
 
   // Current active day data derived or created
@@ -173,7 +188,9 @@ export default function App() {
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isResetConfirmModalOpen, setIsResetConfirmModalOpen] = useState(false);
+  const [isResetRangeModalOpen, setIsResetRangeModalOpen] = useState(false);
   const [isResetAllModalOpen, setIsResetAllModalOpen] = useState(false);
+  const [isResettingRange, setIsResettingRange] = useState(false);
   const [isResettingAll, setIsResettingAll] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isSharingPdf, setIsSharingPdf] = useState(false);
@@ -200,11 +217,23 @@ export default function App() {
     // When Cashier on mobile adds/updates an order or checklist, Laptop Owner sees it live!
     const unsubscribeReports = subscribeToAllReports(
       (remoteMap) => {
-        if (remoteMap && Object.keys(remoteMap).length > 0) {
-          setReportsMap((prev) => ({
-            ...prev,
-            ...remoteMap,
-          }));
+        if (remoteMap) {
+          // Bersihkan data dummy dari cloud jika ada sisa
+          const cleanRemote: Record<string, DayReportData> = {};
+          for (const [dKey, dayData] of Object.entries(remoteMap)) {
+            if (!dayData) continue;
+            cleanRemote[dKey] = {
+              ...dayData,
+              orders: (dayData.orders || []).filter(
+                (o) => !o.id?.startsWith('sample-') && !o.clientName?.includes('Birthday Amanda') && !o.clientName?.includes('Sarah & Reza')
+              ),
+              incomes: (dayData.incomes || []).filter((i) => !i.id?.startsWith('sample-')),
+              customFrames: (dayData.customFrames || []).filter((c) => !c.id?.startsWith('sample-')),
+            };
+          }
+          if (Object.keys(cleanRemote).length > 0) {
+            setReportsMap(cleanRemote);
+          }
         }
         setSyncStatus('synced');
       },
@@ -522,8 +551,8 @@ export default function App() {
     setIsResetConfirmModalOpen(true);
   };
 
-  const handleConfirmResetDay = () => {
-    updateCurrentDay(() => ({
+  const handleConfirmResetDay = async () => {
+    const blankDay: DayReportData = {
       date: selectedDate,
       orders: [],
       customFrames: [],
@@ -534,9 +563,11 @@ export default function App() {
       purchases: [],
       photos: [],
       notes: '',
-    }));
+    };
+    updateCurrentDay(() => blankDay);
+    await saveDayReportToFirestore(blankDay);
     setIsResetConfirmModalOpen(false);
-    showToast('Data tanggal ini telah direset!');
+    showToast('Data tanggal ini telah direset bersih (0 transaksi)!');
   };
 
   // Reset ALL Data (Factory Reset: Local & Cloud Firebase)
@@ -554,10 +585,7 @@ export default function App() {
       // 1. Delete all reports from Firestore
       await resetAllFirestoreReports();
 
-      // 2. Clear localStorage reports
-      localStorage.removeItem(`${STORAGE_KEY}_reports_map`);
-
-      // 3. Reset local state to a fresh blank report for today
+      // 2. Prepare completely blank report for today (0 order, 0 pemasukan)
       const freshToday: DayReportData = {
         date: todayKey,
         orders: [],
@@ -570,10 +598,17 @@ export default function App() {
         photos: [],
         notes: '',
       };
-      setReportsMap({ [todayKey]: freshToday });
+      const blankMap = { [todayKey]: freshToday };
+
+      // 3. Clear localStorage and write clean blank map
+      localStorage.setItem(`${STORAGE_KEY}_reports_map`, JSON.stringify(blankMap));
+      setReportsMap(blankMap);
       setSelectedDate(todayKey);
 
-      // 4. Optionally reset settings to default
+      // 4. Save blank today report to Firestore
+      await saveDayReportToFirestore(freshToday);
+
+      // 5. Optionally reset settings to default
       if (options.resetSettings) {
         localStorage.removeItem(`${STORAGE_KEY}_settings`);
         setSettings(DEFAULT_SETTINGS);
@@ -582,7 +617,7 @@ export default function App() {
 
       setSyncStatus('synced');
       setIsResetAllModalOpen(false);
-      showToast('Seluruh data berhasil direset bersih (Lokal & Cloud Firebase)!');
+      showToast('Seluruh data berhasil direset bersih tanpa data otomatis!');
     } catch (error) {
       console.error('Reset all error:', error);
       showToast('Sebagian data lokal berhasil direset. Periksa koneksi cloud.');
@@ -592,11 +627,89 @@ export default function App() {
     }
   };
 
+  // Reset Data for Specific Date Range [startDate, endDate]
+  const handleOpenResetRangeModal = () => {
+    setIsSettingsOpen(false);
+    setIsResetRangeModalOpen(true);
+  };
+
+  const handleConfirmResetRange = async (startDate: string, endDate: string) => {
+    setIsResettingRange(true);
+    setSyncStatus('syncing');
+    showToast(`Sedang mereset data dari tanggal ${startDate} s.d. ${endDate}...`);
+
+    try {
+      // 1. Delete matching documents from Firestore
+      await resetDateRangeReports(startDate, endDate);
+
+      // 2. Remove matching dates from local reportsMap and localStorage
+      const updatedMap: Record<string, DayReportData> = {};
+      for (const [dateKey, dayData] of Object.entries(reportsMap)) {
+        if (dateKey >= startDate && dateKey <= endDate) {
+          // If it's today's date, keep it as a clean blank template
+          if (dateKey === todayKey) {
+            const blankToday: DayReportData = {
+              date: todayKey,
+              orders: [],
+              customFrames: [],
+              incomes: [],
+              boothCondition: DEFAULT_BOOTH_CONDITION,
+              stockCondition: DEFAULT_STOCK_CONDITION,
+              issues: [],
+              purchases: [],
+              photos: [],
+              notes: '',
+            };
+            updatedMap[todayKey] = blankToday;
+            await saveDayReportToFirestore(blankToday);
+          }
+          continue;
+        }
+        updatedMap[dateKey] = dayData;
+      }
+
+      // Ensure today is always present in updatedMap
+      if (!updatedMap[todayKey]) {
+        updatedMap[todayKey] = {
+          date: todayKey,
+          orders: [],
+          customFrames: [],
+          incomes: [],
+          boothCondition: DEFAULT_BOOTH_CONDITION,
+          stockCondition: DEFAULT_STOCK_CONDITION,
+          issues: [],
+          purchases: [],
+          photos: [],
+          notes: '',
+        };
+      }
+
+      localStorage.setItem(`${STORAGE_KEY}_reports_map`, JSON.stringify(updatedMap));
+      setReportsMap(updatedMap);
+
+      // If current selected date fell within the reset range, select today
+      if (selectedDate >= startDate && selectedDate <= endDate) {
+        setSelectedDate(todayKey);
+      }
+
+      setSyncStatus('synced');
+      setIsResetRangeModalOpen(false);
+      showToast(`Data rentang tanggal berhasil direset bersih (0 transaksi)!`);
+    } catch (err) {
+      console.error('Reset date range error:', err);
+      showToast('Gagal mereset data rentang tanggal.');
+    } finally {
+      setIsResettingRange(false);
+    }
+  };
+
   // Derived Calculations
   const dateStr = formatDateIndonesian(selectedDate);
   const totalFoto = calculateTotalFoto(currentDayData.orders);
   const totalAdditional = calculateTotalAdditionalPrint(currentDayData.orders);
   const totalPrints = calculateTotalPrints(currentDayData.orders);
+  // Total orderan mengikuti akumulasi total foto semua (Foto + Additional Print)
+  const totalOrders = totalPrints;
   const totalIncome = calculateTotalIncome(currentDayData.incomes);
   const lowStockCount = Object.values(currentDayData.stockCondition).filter((v) => v === 'Kurang').length;
   const boothIssuesCount = Object.values(currentDayData.boothCondition).filter((v) => v === 'Masalah').length;
@@ -820,9 +933,21 @@ export default function App() {
                   <Printer className="w-3.5 h-3.5 text-rose-400" />
                   <strong className="text-white font-bold">{viewMode === 'daily' ? totalPrints : monthlySummary.totalPrints}</strong> Print Biji
                 </span>
-                <span className="inline-flex items-center gap-1 bg-[#1a0308]/80 px-2.5 py-1 rounded-xl border border-rose-500/25">
+                <span className="inline-flex items-center gap-1.5 bg-[#1a0308]/80 px-2.5 py-1 rounded-xl border border-rose-500/25">
                   <span className="text-rose-400 font-bold">#</span>
-                  <strong className="text-white font-bold">{viewMode === 'daily' ? currentDayData.orders.length : monthlySummary.totalOrders}</strong> Transaksi
+                  {viewMode === 'daily' ? (
+                    <>
+                      <strong className="text-white font-bold">{totalOrders} Order</strong>
+                      <span className="text-rose-400/50">—</span>
+                      <span className="text-rose-200">Foto: <strong className="text-white font-bold">{totalFoto}</strong></span>
+                      <span className="text-rose-400/40">|</span>
+                      <span className="text-indigo-200">Add: <strong className="text-indigo-300 font-bold">{totalAdditional}</strong></span>
+                    </>
+                  ) : (
+                    <>
+                      <strong className="text-white font-bold">{monthlySummary.totalOrders}</strong> Transaksi
+                    </>
+                  )}
                 </span>
                 <span className="inline-flex items-center gap-1 bg-[#1a0308]/80 px-2.5 py-1 rounded-xl border border-rose-500/25">
                   {hasIssues ? (
@@ -884,7 +1009,7 @@ export default function App() {
           <div className="space-y-5 animate-in fade-in duration-200">
             {/* Quick Stats Bar for selected date */}
             <StatsBar
-              totalOrders={currentDayData.orders.length}
+              totalOrders={totalOrders}
               totalFoto={totalFoto}
               totalAdditional={totalAdditional}
               totalPrints={totalPrints}
@@ -981,6 +1106,7 @@ export default function App() {
               }}
               onExportMonthlyPdf={handleExportMonthlyPdf}
               onShareMonthlyPdf={handleShareMonthlyPdf}
+              onOpenResetRange={handleOpenResetRangeModal}
               isGeneratingPdf={isGeneratingPdf}
               isSharingPdf={isSharingPdf}
             />
@@ -1056,7 +1182,17 @@ export default function App() {
           showToast('Pengaturan photobooth disimpan!');
         }}
         onResetDay={handleOpenResetModal}
+        onResetRange={handleOpenResetRangeModal}
         onResetAllData={handleOpenResetAllModal}
+      />
+
+      {/* Reset Date Range Modal */}
+      <ResetRangeModal
+        isOpen={isResetRangeModalOpen}
+        onClose={() => setIsResetRangeModalOpen(false)}
+        reportsMap={reportsMap}
+        onConfirmResetRange={handleConfirmResetRange}
+        isResetting={isResettingRange}
       />
 
       {/* Reset All Data (Factory Reset) Confirmation Modal */}

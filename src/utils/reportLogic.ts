@@ -210,6 +210,13 @@ export function calculateTotalPrints(orders: Order[]): number {
   return orders.reduce((sum, order) => sum + getOrderQty(order), 0);
 }
 
+/**
+ * Menghitung Total Orderan yang mengikuti akumulasi total foto semua (Foto + Additional Print)
+ */
+export function calculateTotalOrders(orders: Order[]): number {
+  return calculateTotalPrints(orders);
+}
+
 export function calculateTotalIncome(incomes: Income[]): number {
   return incomes.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
 }
@@ -370,10 +377,9 @@ export function buildWhatsAppMessage(data: {
 
   // Ringkasan Utama
   lines.push(`📊 *RINGKASAN ORDERAN & CETAK:*`);
-  lines.push(`• Total Transaksi Input: ${data.orders.length} kali`);
-  lines.push(`• Total Foto (Sesi): *${totalFoto} foto*`);
-  lines.push(`• Total Additional Print: *${totalAdditional} print*`);
-  lines.push(`• Total Keseluruhan: *${totalPrints} print*`);
+  lines.push(`• Total Orderan (Total Semua Foto): *${totalPrints} order* (${totalPrints} print)`);
+  lines.push(`  - Foto Sesi Utuh: *${totalFoto} foto*`);
+  lines.push(`  - Additional Print: *${totalAdditional} print*`);
   lines.push(`• Total Pemasukan: *${formatRupiah(totalIncome)}*`);
   if (data.customFrames && data.customFrames.length > 0) {
     const activeFrames = data.customFrames.filter((f) => f.status !== 'Selesai').length;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Store, User, Phone, Check, RefreshCw, Download, Copy, Settings as SettingsIcon, Trash2, Cloud, Database, AlertTriangle } from 'lucide-react';
+import { X, Store, User, Phone, Check, RefreshCw, Download, Copy, Settings as SettingsIcon, Trash2, Cloud, Database, AlertTriangle, Calendar } from 'lucide-react';
 import { Settings, sanitizePhoneNumber } from '../utils/reportLogic';
 import { generateSingleFileHtml } from '../utils/singleFileHtmlGenerator';
 
@@ -9,6 +9,7 @@ interface SettingsModalProps {
   settings: Settings;
   onSaveSettings: (newSettings: Settings) => void;
   onResetDay: () => void;
+  onResetRange?: () => void;
   onResetAllData?: () => void;
 }
 
@@ -18,6 +19,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   settings,
   onSaveSettings,
   onResetDay,
+  onResetRange,
   onResetAllData,
 }) => {
   const [boothName, setBoothName] = useState(settings.boothName);
@@ -294,6 +296,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <span>Reset Hari Ini</span>
             </button>
           </div>
+
+          {/* Reset Rentang Tanggal */}
+          {onResetRange && (
+            <div className="p-3 bg-amber-950/40 border border-amber-500/35 rounded-2xl flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold text-amber-200 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                  Reset Sesuai Rentang Tanggal
+                </p>
+                <p className="text-[11px] text-amber-300/70">
+                  Hapus data dari tanggal berapa sampai tanggal berapa.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onResetRange}
+                className="px-3 py-1.5 text-xs font-bold text-amber-200 hover:text-white bg-amber-900/60 hover:bg-amber-800 border border-amber-500/40 rounded-xl transition flex items-center gap-1 cursor-pointer shrink-0"
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                <span>Pilih Tanggal</span>
+              </button>
+            </div>
+          )}
 
           {/* Zona Bahaya: Reset Semua Data */}
           {onResetAllData && (

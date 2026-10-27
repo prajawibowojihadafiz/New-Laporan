@@ -39,7 +39,7 @@ export const StatsBar: React.FC<StatsBarProps> = ({
           {/* Sub-keterangan rincian kalkulasi: Foto Sesi Utuh: A | Additional Print: B */}
           <div className="mt-1.5 text-[10.5px] font-medium text-rose-200/90 bg-[#160206]/90 px-2.5 py-1 rounded-xl border border-rose-500/20 leading-tight">
             <span>Foto Sesi Utuh: <strong className="text-rose-300 font-bold">{totalFoto}</strong></span>
-            <span className="text-rose-500/40 mx-1">|</span>
+            <span className="text-rose-500/40 mx-1.5">—</span>
             <span>Additional Print: <strong className="text-indigo-300 font-bold">{totalAdditional}</strong></span>
           </div>
         </div>

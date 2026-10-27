@@ -24,6 +24,7 @@ interface MonthlyOverviewSectionProps {
   onSelectDate: (dateKey: string) => void;
   onExportMonthlyPdf: () => void;
   onShareMonthlyPdf?: () => void;
+  onOpenResetRange?: () => void;
   isGeneratingPdf?: boolean;
   isSharingPdf?: boolean;
 }
@@ -35,6 +36,7 @@ export const MonthlyOverviewSection: React.FC<MonthlyOverviewSectionProps> = ({
   onSelectDate,
   onExportMonthlyPdf,
   onShareMonthlyPdf,
+  onOpenResetRange,
   isGeneratingPdf = false,
   isSharingPdf = false,
 }) => {
@@ -119,6 +121,18 @@ export const MonthlyOverviewSection: React.FC<MonthlyOverviewSectionProps> = ({
             <FileDown className="w-4 h-4 text-rose-300" />
             <span>{isGeneratingPdf ? 'Mengunduh...' : 'Unduh PDF'}</span>
           </button>
+
+          {onOpenResetRange && (
+            <button
+              type="button"
+              onClick={onOpenResetRange}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-amber-950/60 hover:bg-amber-900/80 text-amber-200 hover:text-white text-xs sm:text-sm font-semibold rounded-xl border border-amber-500/35 transition cursor-pointer"
+              title="Hapus data laporan pada rentang tanggal tertentu"
+            >
+              <Calendar className="w-4 h-4 text-amber-400" />
+              <span>Reset Rentang Tanggal</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -245,7 +259,7 @@ export const MonthlyOverviewSection: React.FC<MonthlyOverviewSectionProps> = ({
           <div className="overflow-x-auto max-h-72 overflow-y-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-[#140206]/90 text-rose-300/70 sticky top-0 border-b border-rose-500/20">
-                <tr>
+                <tr className="page-break-inside-avoid no-break">
                   <th className="py-2.5 px-3 font-bold">Tanggal</th>
                   <th className="py-2.5 px-3 font-bold">Hari</th>
                   <th className="py-2.5 px-3 text-center font-bold">Order</th>
@@ -259,7 +273,7 @@ export const MonthlyOverviewSection: React.FC<MonthlyOverviewSectionProps> = ({
                   <tr
                     key={d.date}
                     onClick={() => onSelectDate(d.date)}
-                    className="hover:bg-rose-950/40 transition cursor-pointer group"
+                    className="page-break-inside-avoid no-break hover:bg-rose-950/40 transition cursor-pointer group"
                   >
                     <td className="py-2 px-3 font-bold text-white">{d.dayLabel}</td>
                     <td className="py-2 px-3 text-rose-300/70">{d.dayOfWeek}</td>

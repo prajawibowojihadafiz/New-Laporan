@@ -131,9 +131,9 @@ export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTempl
           </div>
           <div className="p-2.5 bg-purple-50 border border-purple-200 rounded-xl">
             <p className="text-[9px] font-bold text-purple-700 uppercase tracking-wider">
-              Total Keseluruhan
+              Total Orderan (Semua Foto)
             </p>
-            <p className="text-base font-black text-purple-900 mt-0.5">{totalPrints} Cetak</p>
+            <p className="text-base font-black text-purple-900 mt-0.5">{totalPrints} Order</p>
           </div>
           <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl">
             <p className="text-[9px] font-bold text-emerald-700 uppercase tracking-wider">
@@ -157,7 +157,7 @@ export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTempl
           {/* Orderan Solid Table */}
           <div className="border border-slate-300 rounded-xl overflow-hidden flex flex-col bg-white">
             <div className="bg-slate-100 px-3 py-2 border-b border-slate-300 font-bold text-slate-800 flex justify-between items-center text-[11px]">
-              <span>Rincian Orderan ({orders.length})</span>
+              <span>Rincian Orderan ({totalPrints} Foto)</span>
               <span className="text-[10px] font-extrabold text-indigo-700">
                 {totalFoto} Foto • {totalAdditional} Add
               </span>
@@ -169,7 +169,7 @@ export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTempl
                 <col style={{ width: '60px' }} />
               </colgroup>
               <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
-                <tr>
+                <tr className="page-break-inside-avoid no-break">
                   <th className="py-1.5 px-2.5 font-semibold border-r border-slate-200">No</th>
                   <th className="py-1.5 px-2.5 font-semibold border-r border-slate-200">Kategori / Keterangan</th>
                   <th className="py-1.5 px-2.5 text-right font-semibold">Qty</th>
@@ -177,7 +177,7 @@ export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTempl
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {orders.length === 0 ? (
-                  <tr>
+                  <tr className="page-break-inside-avoid no-break">
                     <td colSpan={3} className="py-3 px-3 text-center text-slate-400 italic">
                       Tidak ada orderan
                     </td>
@@ -188,7 +188,7 @@ export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTempl
                     const qty = getOrderQty(ord);
                     const isAdditional = cat === 'Additional Print';
                     return (
-                      <tr key={ord.id} className="hover:bg-slate-50/50">
+                      <tr key={ord.id} className="page-break-inside-avoid no-break hover:bg-slate-50/50">
                         <td className="py-1.5 px-2.5 text-slate-400 border-r border-slate-100 text-[10px]">{idx + 1}</td>
                         <td className="py-1.5 px-2.5 border-r border-slate-100">
                           <span
@@ -232,7 +232,7 @@ export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTempl
                 <col style={{ width: '110px' }} />
               </colgroup>
               <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
-                <tr>
+                <tr className="page-break-inside-avoid no-break">
                   <th className="py-1.5 px-3 font-semibold border-r border-slate-200">No</th>
                   <th className="py-1.5 px-3 font-semibold border-r border-slate-200">Metode / Sumber</th>
                   <th className="py-1.5 px-3 text-right font-semibold">Nominal</th>
@@ -240,14 +240,14 @@ export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTempl
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {incomes.length === 0 ? (
-                  <tr>
+                  <tr className="page-break-inside-avoid no-break">
                     <td colSpan={3} className="py-3 px-3 text-center text-slate-400 italic">
                       Tidak ada catatan pemasukan
                     </td>
                   </tr>
                 ) : (
                   incomes.map((inc, idx) => (
-                    <tr key={inc.id} className="hover:bg-slate-50/50">
+                    <tr key={inc.id} className="page-break-inside-avoid no-break hover:bg-slate-50/50">
                       <td className="py-1.5 px-3 text-slate-400 border-r border-slate-100">{idx + 1}</td>
                       <td className="py-1.5 px-3 font-medium text-slate-800 truncate border-r border-slate-100">
                         {inc.source}
@@ -281,7 +281,7 @@ export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTempl
                 <col style={{ width: '85px' }} />
               </colgroup>
               <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
-                <tr>
+                <tr className="page-break-inside-avoid no-break">
                   <th className="py-1.5 px-3 font-semibold border-r border-slate-200">No</th>
                   <th className="py-1.5 px-3 font-semibold border-r border-slate-200">Klien / Event</th>
                   <th className="py-1.5 px-3 font-semibold border-r border-slate-200">Tema</th>
@@ -291,7 +291,7 @@ export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTempl
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {customFrames.map((frame, idx) => (
-                  <tr key={frame.id}>
+                  <tr key={frame.id} className="page-break-inside-avoid no-break hover:bg-slate-50/50">
                     <td className="py-1.5 px-3 text-slate-400 border-r border-slate-100">{idx + 1}</td>
                     <td className="py-1.5 px-3 font-bold text-slate-900 truncate border-r border-slate-100">
                       {frame.clientName}
@@ -336,7 +336,7 @@ export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTempl
                 <col style={{ width: '80px' }} />
               </colgroup>
               <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
-                <tr>
+                <tr className="page-break-inside-avoid no-break">
                   <th className="py-1 px-2.5 font-semibold border-r border-slate-200">No</th>
                   <th className="py-1 px-2.5 font-semibold border-r border-slate-200">Komponen</th>
                   <th className="py-1 px-2.5 text-center font-semibold">Status</th>
@@ -346,7 +346,7 @@ export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTempl
                 {(Object.keys(boothCondition) as (keyof BoothCondition)[]).map((key, idx) => {
                   const isOk = boothCondition[key] === 'OK';
                   return (
-                    <tr key={key} className="hover:bg-slate-50/50">
+                    <tr key={key} className="page-break-inside-avoid no-break hover:bg-slate-50/50">
                       <td className="py-1 px-2.5 text-slate-400 border-r border-slate-100">{idx + 1}</td>
                       <td className="py-1 px-2.5 text-slate-800 font-medium border-r border-slate-100">
                         {BOOTH_LABELS[key]}
@@ -382,7 +382,7 @@ export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTempl
                 <col style={{ width: '80px' }} />
               </colgroup>
               <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
-                <tr>
+                <tr className="page-break-inside-avoid no-break">
                   <th className="py-1 px-2.5 font-semibold border-r border-slate-200">No</th>
                   <th className="py-1 px-2.5 font-semibold border-r border-slate-200">Item</th>
                   <th className="py-1 px-2.5 text-center font-semibold">Status</th>
@@ -392,7 +392,7 @@ export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTempl
                 {(Object.keys(stockCondition) as (keyof StockCondition)[]).map((key, idx) => {
                   const isOk = stockCondition[key] === 'OK';
                   return (
-                    <tr key={key} className="hover:bg-slate-50/50">
+                    <tr key={key} className="page-break-inside-avoid no-break hover:bg-slate-50/50">
                       <td className="py-1 px-2.5 text-slate-400 border-r border-slate-100">{idx + 1}</td>
                       <td className="py-1 px-2.5 text-slate-800 font-medium truncate border-r border-slate-100">
                         {STOCK_LABELS[key].label}
@@ -438,14 +438,14 @@ export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTempl
               </colgroup>
               <tbody className="divide-y divide-slate-100">
                 {issues.length === 0 ? (
-                  <tr>
+                  <tr className="page-break-inside-avoid no-break">
                     <td colSpan={2} className="py-3 px-3 text-center text-slate-400 italic">
                       Tidak ada kendala operasional (Aman & Lancar).
                     </td>
                   </tr>
                 ) : (
                   issues.map((i, idx) => (
-                    <tr key={i.id} className="hover:bg-slate-50/50">
+                    <tr key={i.id} className="page-break-inside-avoid no-break hover:bg-slate-50/50">
                       <td className="py-1.5 px-2.5 text-slate-400 font-bold border-r border-slate-100 align-top">
                         {idx + 1}
                       </td>
@@ -471,14 +471,14 @@ export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTempl
               </colgroup>
               <tbody className="divide-y divide-slate-100">
                 {purchases.length === 0 ? (
-                  <tr>
+                  <tr className="page-break-inside-avoid no-break">
                     <td colSpan={3} className="py-3 px-3 text-center text-slate-400 italic">
                       Stok aman tercukupi, tidak ada kebutuhan beli.
                     </td>
                   </tr>
                 ) : (
                   purchases.map((p, idx) => (
-                    <tr key={p.id} className="hover:bg-slate-50/50">
+                    <tr key={p.id} className="page-break-inside-avoid no-break hover:bg-slate-50/50">
                       <td className="py-1.5 px-2.5 text-slate-400 font-bold border-r border-slate-100">
                         {idx + 1}
                       </td>
@@ -585,11 +585,13 @@ export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTempl
 
         {/* Tanda Tangan / Signature Block */}
         <div
-          className="pt-6 border-t border-slate-300 text-center"
+          className="signature-block card-block card pt-6 border-t border-slate-300 text-center"
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
             gap: '32px',
+            breakInside: 'avoid',
+            pageBreakInside: 'avoid',
           }}
         >
           <div>
