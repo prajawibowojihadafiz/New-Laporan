@@ -6,6 +6,8 @@ import {
   calculateTotalFoto,
   calculateTotalAdditionalPrint,
   calculateTotalIncome,
+  calculateTotalHeldMoney,
+  calculatePendingHeldMoney,
   formatRupiah,
   parseRupiahInput,
   sanitizePhoneNumber,
@@ -19,6 +21,7 @@ import {
   Income,
   Issue,
   PurchaseItem,
+  HeldMoneyItem,
 } from './reportLogic';
 
 test('calculateTotalPrints correctly sums print quantities', () => {
@@ -230,5 +233,38 @@ test('date range reset correctly removes targeted dates and keeps outside dates 
   assert.strictEqual(updatedMap['2026-10-20'], undefined, 'Date in range should be deleted');
   assert.equal(Object.keys(updatedMap).length, 2);
 });
+
+test('calculateTotalHeldMoney and calculatePendingHeldMoney calculate amounts accurately', () => {
+  const items: HeldMoneyItem[] = [
+    { id: '1', amount: 50000, reason: 'QRIS BCA Pending', status: 'Tertahan' },
+    { id: '2', amount: 75000, reason: 'Transfer an Rizki belum masuk', status: 'Tertahan' },
+    { id: '3', amount: 30000, reason: 'Uang kembalian tertahan', status: 'Selesai' },
+  ];
+
+  assert.equal(calculateTotalHeldMoney(items), 155000);
+  assert.equal(calculatePendingHeldMoney(items), 125000);
+});
+
+test('buildWhatsAppMessage includes Uang Tertahan section when present', () => {
+  const msg = buildWhatsAppMessage({
+    dateStr: 'Selasa, 27 Oktober 2026',
+    settings: DEFAULT_SETTINGS,
+    orders: [{ id: '1', prints: 10, category: 'Foto' }],
+    incomes: [{ id: '1', source: 'Cash', amount: 150000 }],
+    issues: [{ id: '1', text: 'Kertas hampir habis' }],
+    purchases: [],
+    notes: '',
+    boothCondition: DEFAULT_BOOTH_CONDITION,
+    stockCondition: DEFAULT_STOCK_CONDITION,
+    heldMoneys: [
+      { id: 'hm-1', amount: 50000, reason: 'QRIS Pending belum masuk mutasi', status: 'Tertahan', time: '14:30' },
+    ],
+  });
+
+  assert.ok(msg.includes('UANG TERTAHAN'));
+  assert.ok(msg.includes('QRIS Pending belum masuk mutasi'));
+  assert.ok(msg.includes('Rp 50.000'));
+});
+
 
 

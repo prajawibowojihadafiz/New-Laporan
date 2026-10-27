@@ -27,6 +27,7 @@ import { IncomeSection } from './components/IncomeSection';
 import { BoothChecklist } from './components/BoothChecklist';
 import { StockChecklist } from './components/StockChecklist';
 import { IssuesSection } from './components/IssuesSection';
+import { HeldMoneySection } from './components/HeldMoneySection';
 import { PurchasesSection } from './components/PurchasesSection';
 import { PhotoSection } from './components/PhotoSection';
 import { NotesSection } from './components/NotesSection';
@@ -56,6 +57,8 @@ import {
   Income,
   Issue,
   PurchaseItem,
+  HeldMoneyItem,
+  HeldMoneyStatus,
   CustomFrameQueueItem,
   CustomFrameStatus,
   BoothCondition,
@@ -137,6 +140,7 @@ export default function App() {
               orders: realOrders,
               incomes: realIncomes,
               customFrames: realCustomFrames,
+              heldMoneys: dayData.heldMoneys || [],
             };
           }
           if (hadSample) {
@@ -159,6 +163,7 @@ export default function App() {
       purchases: [],
       photos: [],
       notes: '',
+      heldMoneys: [],
     };
 
     return { [todayKey]: blankToday };
@@ -180,6 +185,7 @@ export default function App() {
       purchases: [],
       photos: [],
       notes: '',
+      heldMoneys: [],
     };
   }, [reportsMap, selectedDate]);
 
@@ -353,6 +359,7 @@ export default function App() {
         purchases: [],
         photos: [],
         notes: '',
+        heldMoneys: [],
       };
       const updated = updater(existing);
 
@@ -498,6 +505,48 @@ export default function App() {
     updateCurrentDay((prev) => ({
       ...prev,
       issues: prev.issues.filter((i) => i.id !== id),
+    }));
+  };
+
+  // Uang Tertahan (Held Money) Handlers
+  const handleAddHeldMoney = (amount: number, reason: string) => {
+    const timeStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    const newItem: HeldMoneyItem = {
+      id: `held-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      amount,
+      reason,
+      status: 'Tertahan',
+      time: timeStr,
+      createdAt: new Date().toISOString(),
+    };
+    updateCurrentDay((prev) => ({
+      ...prev,
+      heldMoneys: [newItem, ...(prev.heldMoneys || [])],
+    }));
+    showToast(`Uang tertahan ${formatRupiah(amount)} dicatat!`);
+  };
+
+  const handleToggleHeldMoneyStatus = (id: string) => {
+    updateCurrentDay((prev) => {
+      const currentList = prev.heldMoneys || [];
+      const updated: HeldMoneyItem[] = currentList.map((item) => {
+        if (item.id === id) {
+          const nextStatus: HeldMoneyStatus = item.status === 'Selesai' ? 'Tertahan' : 'Selesai';
+          return { ...item, status: nextStatus };
+        }
+        return item;
+      });
+      return {
+        ...prev,
+        heldMoneys: updated,
+      };
+    });
+  };
+
+  const handleRemoveHeldMoney = (id: string) => {
+    updateCurrentDay((prev) => ({
+      ...prev,
+      heldMoneys: (prev.heldMoneys || []).filter((item) => item.id !== id),
     }));
   };
 
@@ -733,6 +782,7 @@ export default function App() {
       boothCondition: currentDayData.boothCondition,
       stockCondition: currentDayData.stockCondition,
       customFrames: currentDayData.customFrames,
+      heldMoneys: currentDayData.heldMoneys,
     });
   }, [dateStr, settings, currentDayData]);
 
@@ -1061,19 +1111,30 @@ export default function App() {
               />
             </div>
 
-            {/* Section Grid 3: Kendala & Barang Belanja */}
+            {/* Section Grid 3: Kendala & Uang Tertahan (Kiri), Barang Belanja (Kanan) */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
-              <IssuesSection
-                issues={currentDayData.issues}
-                onAddIssue={handleAddIssue}
-                onRemoveIssue={handleRemoveIssue}
-              />
+              <div className="flex flex-col gap-5">
+                <IssuesSection
+                  issues={currentDayData.issues}
+                  onAddIssue={handleAddIssue}
+                  onRemoveIssue={handleRemoveIssue}
+                />
 
-              <PurchasesSection
-                purchases={currentDayData.purchases}
-                onAddPurchase={handleAddPurchase}
-                onRemovePurchase={handleRemovePurchase}
-              />
+                <HeldMoneySection
+                  heldMoneys={currentDayData.heldMoneys || []}
+                  onAddHeldMoney={handleAddHeldMoney}
+                  onToggleStatus={handleToggleHeldMoneyStatus}
+                  onRemoveHeldMoney={handleRemoveHeldMoney}
+                />
+              </div>
+
+              <div className="flex flex-col gap-5">
+                <PurchasesSection
+                  purchases={currentDayData.purchases}
+                  onAddPurchase={handleAddPurchase}
+                  onRemovePurchase={handleRemovePurchase}
+                />
+              </div>
             </div>
 
             {/* Section Grid 4: Foto Kegiatan & Catatan Kegiatan */}
@@ -1290,6 +1351,7 @@ export default function App() {
           boothCondition={currentDayData.boothCondition}
           stockCondition={currentDayData.stockCondition}
           customFrames={currentDayData.customFrames}
+          heldMoneys={currentDayData.heldMoneys || []}
         />
       </div>
 

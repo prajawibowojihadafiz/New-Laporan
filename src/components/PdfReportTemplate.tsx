@@ -16,6 +16,8 @@ import {
   getOrderQty,
   calculateTotalIncome,
   formatRupiah,
+  HeldMoneyItem,
+  calculatePendingHeldMoney,
   BOOTH_LABELS,
   STOCK_LABELS,
 } from '../utils/reportLogic';
@@ -32,6 +34,7 @@ interface PdfReportTemplateProps {
   boothCondition: BoothCondition;
   stockCondition: StockCondition;
   customFrames?: CustomFrameQueueItem[];
+  heldMoneys?: HeldMoneyItem[];
 }
 
 export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTemplateProps>(
@@ -48,6 +51,7 @@ export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTempl
       boothCondition,
       stockCondition,
       customFrames = [],
+      heldMoneys = [],
     },
     ref
   ) => {
@@ -495,6 +499,70 @@ export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTempl
             </table>
           </div>
         </div>
+
+        {/* Uang Tertahan (jika ada catatan) */}
+        {heldMoneys.length > 0 && (
+          <div className="border border-amber-300 rounded-xl overflow-hidden mb-5 bg-white page-break-inside-avoid no-break">
+            <div className="bg-amber-100 px-3 py-2 border-b border-amber-300 font-bold text-amber-950 text-[11px] flex justify-between items-center">
+              <span>⏳ Uang Tertahan (Pending Mutasi / Kas)</span>
+              <span className="text-[10px] font-bold text-amber-800">
+                Sisa Tertahan: {formatRupiah(calculatePendingHeldMoney(heldMoneys))}
+              </span>
+            </div>
+            <table className="w-full table-fixed text-left text-[11px] border-collapse">
+              <colgroup>
+                <col style={{ width: '32px' }} />
+                <col style={{ width: 'auto' }} />
+                <col style={{ width: '60px' }} />
+                <col style={{ width: '85px' }} />
+                <col style={{ width: '100px' }} />
+              </colgroup>
+              <thead className="bg-amber-50 text-amber-900 border-b border-amber-200">
+                <tr className="page-break-inside-avoid no-break">
+                  <th className="py-1 px-2.5 font-semibold border-r border-amber-200">No</th>
+                  <th className="py-1 px-2.5 font-semibold border-r border-amber-200">Keterangan / Alasan</th>
+                  <th className="py-1 px-2.5 text-center font-semibold border-r border-amber-200">Jam</th>
+                  <th className="py-1 px-2.5 text-center font-semibold border-r border-amber-200">Status</th>
+                  <th className="py-1 px-2.5 text-right font-semibold">Nominal</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-amber-100">
+                {heldMoneys.map((item, idx) => {
+                  const isResolved = item.status === 'Selesai';
+                  return (
+                    <tr key={item.id} className="page-break-inside-avoid no-break hover:bg-amber-50/40">
+                      <td className="py-1.5 px-2.5 text-slate-400 border-r border-amber-100">{idx + 1}</td>
+                      <td className="py-1.5 px-2.5 text-slate-800 font-medium truncate border-r border-amber-100">
+                        {item.reason}
+                      </td>
+                      <td className="py-1.5 px-2.5 text-center text-slate-500 border-r border-amber-100">
+                        {item.time || '-'}
+                      </td>
+                      <td className="py-1.5 px-2.5 text-center border-r border-amber-100">
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded font-bold text-[10px] ${
+                            isResolved
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-amber-200 text-amber-900 font-extrabold'
+                          }`}
+                        >
+                          {item.status}
+                        </span>
+                      </td>
+                      <td
+                        className={`py-1.5 px-2.5 text-right font-bold ${
+                          isResolved ? 'line-through text-slate-400' : 'text-amber-900'
+                        }`}
+                      >
+                        {formatRupiah(item.amount)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {/* Catatan Kegiatan */}
         {notes && (

@@ -119,6 +119,7 @@ function sanitizeReportForFirestore(data: DayReportData): Record<string, unknown
     purchases: data.purchases || [],
     photos: safePhotos,
     notes: data.notes || '',
+    heldMoneys: data.heldMoneys || [],
     updatedAt: new Date().toISOString(),
   };
 }
@@ -183,6 +184,7 @@ export function subscribeToAllReports(
             purchases: Array.isArray(d.purchases) ? d.purchases : [],
             photos: Array.isArray(d.photos) ? d.photos : [],
             notes: d.notes || '',
+            heldMoneys: Array.isArray(d.heldMoneys) ? d.heldMoneys : [],
           };
         }
       });
@@ -300,6 +302,7 @@ export async function forceResyncAllData(
           purchases: Array.isArray(d.purchases) ? d.purchases : [],
           photos: Array.isArray(d.photos) ? d.photos : [],
           notes: d.notes || '',
+          heldMoneys: Array.isArray(d.heldMoneys) ? d.heldMoneys : [],
         };
       }
     });

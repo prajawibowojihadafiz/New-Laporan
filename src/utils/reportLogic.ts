@@ -78,6 +78,17 @@ export interface PhotoItem {
   caption?: string;
 }
 
+export type HeldMoneyStatus = 'Tertahan' | 'Selesai';
+
+export interface HeldMoneyItem {
+  id: string;
+  amount: number;
+  reason: string;
+  status: HeldMoneyStatus;
+  time?: string;
+  createdAt?: string;
+}
+
 export interface DayReportData {
   date: string; // YYYY-MM-DD
   orders: Order[];
@@ -89,6 +100,7 @@ export interface DayReportData {
   purchases: PurchaseItem[];
   photos: PhotoItem[];
   notes: string;
+  heldMoneys?: HeldMoneyItem[];
 }
 
 export interface DailySalesSummary {
@@ -219,6 +231,18 @@ export function calculateTotalOrders(orders: Order[]): number {
 
 export function calculateTotalIncome(incomes: Income[]): number {
   return incomes.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+}
+
+export function calculateTotalHeldMoney(heldMoneys?: HeldMoneyItem[]): number {
+  if (!heldMoneys || !Array.isArray(heldMoneys)) return 0;
+  return heldMoneys.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+}
+
+export function calculatePendingHeldMoney(heldMoneys?: HeldMoneyItem[]): number {
+  if (!heldMoneys || !Array.isArray(heldMoneys)) return 0;
+  return heldMoneys
+    .filter((item) => item.status !== 'Selesai')
+    .reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
 }
 
 export function formatRupiah(amount: number): string {
@@ -361,6 +385,7 @@ export function buildWhatsAppMessage(data: {
   boothCondition: BoothCondition;
   stockCondition: StockCondition;
   customFrames?: CustomFrameQueueItem[];
+  heldMoneys?: HeldMoneyItem[];
 }): string {
   const totalFoto = calculateTotalFoto(data.orders);
   const totalAdditional = calculateTotalAdditionalPrint(data.orders);
@@ -443,6 +468,20 @@ export function buildWhatsAppMessage(data: {
     });
   }
   lines.push(``);
+
+  // Uang Tertahan (di bawah Kendala)
+  if (data.heldMoneys && data.heldMoneys.length > 0) {
+    const totalPending = calculatePendingHeldMoney(data.heldMoneys);
+    lines.push(`⏳ *UANG TERTAHAN (PENDING MUTASI / TRANSFER):*`);
+    data.heldMoneys.forEach((hm, idx) => {
+      const statusLabel = hm.status === 'Selesai' ? 'Sudah Cair' : 'Tertahan';
+      const statusIcon = hm.status === 'Selesai' ? '✅' : '⏳';
+      const timeStr = hm.time ? ` (${hm.time})` : '';
+      lines.push(`  ${idx + 1}. [${statusIcon} ${statusLabel}] ${formatRupiah(hm.amount)} - ${hm.reason}${timeStr}`);
+    });
+    lines.push(`  *Total Tertahan:* ${formatRupiah(totalPending)}`);
+    lines.push(``);
+  }
 
   // Barang yang Harus Dibeli
   lines.push(`🛒 *BARANG YANG HARUS DIBELI / STOK KURANG:*`);
