@@ -135,11 +135,15 @@ export default function App() {
             ) {
               hadSample = true;
             }
+            const cleanPhotos = (dayData.photos || []).filter(
+              (p) => p && p.url && !p.url.includes('[compacted]') && p.url.startsWith('data:image/')
+            );
             cleanMap[dKey] = {
               ...dayData,
               orders: realOrders,
               incomes: realIncomes,
               customFrames: realCustomFrames,
+              photos: cleanPhotos,
               heldMoneys: dayData.heldMoneys || [],
             };
           }
@@ -228,6 +232,9 @@ export default function App() {
           const cleanRemote: Record<string, DayReportData> = {};
           for (const [dKey, dayData] of Object.entries(remoteMap)) {
             if (!dayData) continue;
+            const remotePhotos = (dayData.photos || []).filter(
+              (p) => p && p.url && !p.url.includes('[compacted]')
+            );
             cleanRemote[dKey] = {
               ...dayData,
               orders: (dayData.orders || []).filter(
@@ -235,6 +242,7 @@ export default function App() {
               ),
               incomes: (dayData.incomes || []).filter((i) => !i.id?.startsWith('sample-')),
               customFrames: (dayData.customFrames || []).filter((c) => !c.id?.startsWith('sample-')),
+              photos: remotePhotos,
             };
           }
           if (Object.keys(cleanRemote).length > 0) {
@@ -1318,23 +1326,25 @@ export default function App() {
         ownerPhone={settings.ownerPhone}
       />
 
-      {/* Offscreen PDF Printable Document Template - Daily */}
+      {/* Hidden A4 Print Container - Daily Report */}
       <div
+        id="pdf-export-template-wrapper"
         className={
           viewMode === 'daily'
             ? 'print:static print:block print:opacity-100 print:pointer-events-auto print:w-full print:max-w-full'
             : 'print:hidden'
         }
         style={{
-          position: 'fixed',
+          position: 'absolute',
+          left: '-9999px',
           top: 0,
-          left: 0,
-          width: '800px',
-          minWidth: '800px',
-          maxWidth: '800px',
-          opacity: 0,
+          width: '794px',
+          minWidth: '794px',
+          maxWidth: '794px',
+          backgroundColor: '#ffffff',
+          color: '#000000',
+          overflow: 'visible',
           pointerEvents: 'none',
-          zIndex: -100,
         }}
         aria-hidden="true"
       >
@@ -1355,23 +1365,25 @@ export default function App() {
         />
       </div>
 
-      {/* Offscreen PDF Printable Document Template - Monthly with Graph */}
+      {/* Hidden A4 Print Container - Monthly with Graph */}
       <div
+        id="pdf-monthly-export-template-wrapper"
         className={
           viewMode === 'monthly'
             ? 'print:static print:block print:opacity-100 print:pointer-events-auto print:w-full print:max-w-full'
             : 'print:hidden'
         }
         style={{
-          position: 'fixed',
+          position: 'absolute',
+          left: '-9999px',
           top: 0,
-          left: 0,
-          width: '800px',
-          minWidth: '800px',
-          maxWidth: '800px',
-          opacity: 0,
+          width: '794px',
+          minWidth: '794px',
+          maxWidth: '794px',
+          backgroundColor: '#ffffff',
+          color: '#000000',
+          overflow: 'visible',
           pointerEvents: 'none',
-          zIndex: -100,
         }}
         aria-hidden="true"
       >

@@ -27,21 +27,27 @@ export const PhotoSection: React.FC<PhotoSectionProps> = ({
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} WIB`;
 
     try {
-      const compressionPromises = files.map(async (file) => {
-        // Compress and resize image automatically to max 600px width with 0.6 quality
-        const compressedUrl = await compressImageFile(file, 600, 0.6);
-        return {
-          id: `photo-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-          url: compressedUrl || '',
-          name: file.name,
-          timestamp: timeStr,
-        };
-      });
+      const loadedPhotos: PhotoItem[] = [];
+      // Process files sequentially to keep mobile browser memory low and prevent crash
+      for (const file of files) {
+        try {
+          // Compress and resize image automatically to max 450px width with 0.55 quality (~20KB)
+          const compressedUrl = await compressImageFile(file, 450, 0.55);
+          if (compressedUrl && compressedUrl.startsWith('data:image/')) {
+            loadedPhotos.push({
+              id: `photo-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+              url: compressedUrl,
+              name: file.name,
+              timestamp: timeStr,
+            });
+          }
+        } catch (itemErr) {
+          console.warn('Skipping uncompressible photo:', file.name, itemErr);
+        }
+      }
 
-      const loadedPhotos = await Promise.all(compressionPromises);
-      const validPhotos = loadedPhotos.filter((p) => Boolean(p.url));
-      if (validPhotos.length > 0) {
-        onAddPhotos(validPhotos);
+      if (loadedPhotos.length > 0) {
+        onAddPhotos(loadedPhotos);
       }
     } catch (err) {
       console.error('Failed to compress photos:', err);

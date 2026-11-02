@@ -47,12 +47,16 @@ export async function waitForImagesToLoad(element: HTMLElement): Promise<void> {
   const images = Array.from(element.querySelectorAll<HTMLImageElement>('.foto-kegiatan-img, img'));
   await Promise.all(
     images.map((img) => {
+      // If URL is missing or contains corrupt '[compacted]' marker, resolve immediately
+      if (!img.src || img.src.includes('[compacted]')) {
+        return Promise.resolve();
+      }
       if (img.complete && img.naturalHeight !== 0) return Promise.resolve();
       return new Promise<void>((resolve) => {
         img.onload = () => resolve();
         img.onerror = () => resolve();
-        // Safety timeout so broken or slow images don't block indefinitely
-        setTimeout(resolve, 3000);
+        // Safety timeout (2000ms) so broken or slow images never block indefinitely
+        setTimeout(resolve, 2000);
       });
     })
   );
@@ -66,86 +70,124 @@ export async function waitForImagesToLoad(element: HTMLElement): Promise<void> {
  */
 export async function buildPdfDocument(
   element: HTMLElement,
-  targetWidth: number = 800
+  targetWidth: number = 794
 ): Promise<{ pdf: jsPDF; canvas: HTMLCanvasElement; blob: Blob }> {
-  // 1. Wait for all images to settle and decode in DOM 100%
-  await waitForImagesToLoad(element);
+  // Target template element (support #pdf-export-template or container ref)
+  const targetElement =
+    (element.id === 'pdf-export-template' || element.id === 'pdf-monthly-report-document'
+      ? element
+      : (element.querySelector('#pdf-export-template, #pdf-monthly-report-document') as HTMLElement)) ||
+    element;
 
-  // 2. Safe delay (800ms) before rendering canvas
+  // 1. Wait for all images to settle and decode in DOM 100%
+  await waitForImagesToLoad(targetElement);
+
+  // 2. Safe delay (800ms) before rendering canvas so mobile engines decode all images
   await new Promise((resolve) => setTimeout(resolve, 800));
 
-  // A4 portrait math with 10mm margins:
-  // A4 dimensions: 210mm x 297mm.
-  // Margins: 10mm top, bottom, left, right.
-  // Printable area: 190mm width x 277mm height.
-  // Aspect ratio: 277 / 190 ≈ 1.4578947.
-  // At targetWidth = 800px, printable height per page = 800 * (277 / 190) ≈ 1166.3px.
+  // Standard A4 math:
+  // Printable area with 10mm margins: 190mm width x 277mm height
+  // Aspect ratio: 277 / 190 ≈ 1.4578947
+  // At targetWidth = 794px, height per page = 794 * (277 / 190) ≈ 1158px.
   const pxPageHeight = Math.round(targetWidth * (277 / 190));
 
-  const canvas = await html2canvas(element, {
+  const canvas = await html2canvas(targetElement, {
     scale: 2,
     useCORS: true,
     allowTaint: true,
     logging: false,
     backgroundColor: '#ffffff',
-    windowWidth: 1024,
+    windowWidth: 1024, // Lock desktop viewport width to prevent mobile layout collapse
+    windowHeight: Math.max(targetElement.scrollHeight || 1600, 2000),
     width: targetWidth,
-    imageTimeout: 15000,
+    imageTimeout: 10000,
     onclone: (clonedDoc, clonedEl) => {
-      // 1. Ensure all images inside cloned DOM are visible and clean
-      const clonedImages = Array.from(clonedEl.querySelectorAll('img'));
+      // 1. Force desktop viewport styles in cloned DOM
+      clonedDoc.documentElement.style.width = '1024px';
+      clonedDoc.body.style.width = '1024px';
+      clonedDoc.body.style.margin = '0';
+      clonedDoc.body.style.padding = '0';
+      clonedDoc.body.style.backgroundColor = '#ffffff';
+
+      const clonedTarget =
+        clonedDoc.getElementById('pdf-export-template') ||
+        clonedDoc.getElementById('pdf-monthly-report-document') ||
+        clonedDoc.getElementById('pdf-report-document') ||
+        clonedEl;
+
+      clonedTarget.style.position = 'static';
+      clonedTarget.style.left = '0';
+      clonedTarget.style.top = '0';
+      clonedTarget.style.display = 'block';
+      clonedTarget.style.visibility = 'visible';
+      clonedTarget.style.opacity = '1';
+      clonedTarget.style.width = `${targetWidth}px`;
+      clonedTarget.style.minWidth = `${targetWidth}px`;
+      clonedTarget.style.maxWidth = `${targetWidth}px`;
+      clonedTarget.style.boxSizing = 'border-box';
+      clonedTarget.style.margin = '0 auto';
+      clonedTarget.style.backgroundColor = '#ffffff';
+      clonedTarget.style.color = '#000000';
+      clonedTarget.style.fontFamily = 'Arial, sans-serif';
+
+      // Ensure all images are fully visible, valid, and not corrupt
+      const clonedImages = Array.from(clonedTarget.querySelectorAll('img'));
       clonedImages.forEach((img) => {
         img.style.display = 'block';
         img.style.visibility = 'visible';
         img.style.opacity = '1';
+        // If image source is broken or contains [compacted], replace with a clean 1x1 transparent pixel
+        if (!img.src || img.src.includes('[compacted]') || img.src.length < 50) {
+          img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+        }
         if (img.src && img.src.startsWith('data:')) {
           img.removeAttribute('crossorigin');
         }
       });
 
-      // 2. Force document and viewport width
-      clonedDoc.documentElement.style.width = `${targetWidth}px`;
-      clonedDoc.documentElement.style.minWidth = `${targetWidth}px`;
-      clonedDoc.documentElement.style.maxWidth = `${targetWidth}px`;
-      clonedDoc.body.style.width = `${targetWidth}px`;
-      clonedDoc.body.style.minWidth = `${targetWidth}px`;
-      clonedDoc.body.style.maxWidth = `${targetWidth}px`;
-      clonedDoc.body.style.margin = '0';
-      clonedDoc.body.style.padding = '0';
-      clonedDoc.body.style.overflow = 'visible';
-
-      clonedEl.style.position = 'static';
-      clonedEl.style.left = '0';
-      clonedEl.style.top = '0';
-      clonedEl.style.display = 'block';
-      clonedEl.style.visibility = 'visible';
-      clonedEl.style.opacity = '1';
-      clonedEl.style.width = `${targetWidth}px`;
-      clonedEl.style.minWidth = `${targetWidth}px`;
-      clonedEl.style.maxWidth = `${targetWidth}px`;
-      clonedEl.style.boxSizing = 'border-box';
-
-      // 3. Dynamic Pagebreak Avoidance (Next Page bila tidak cukup):
-      // Iterates through breakable elements. If an element crosses a page boundary,
-      // pushes it cleanly to start at the top of the next page using spacer rows/divs.
+      // 2. Specific Page Break Handling:
+      // Ensure Halaman 2 (.pdf-page-break-before, .pdf-page-2) always starts at the beginning of Page 2!
       try {
+        const page2Marker = clonedTarget.querySelector(
+          '.pdf-page-break-before, .pdf-page-2'
+        ) as HTMLElement;
+
+        if (page2Marker) {
+          const rootRect = clonedTarget.getBoundingClientRect();
+          const p2Rect = page2Marker.getBoundingClientRect();
+          const topRelativeToRoot = p2Rect.top - rootRect.top;
+          const currentPage = Math.floor(topRelativeToRoot / pxPageHeight);
+          const targetPageTop = (currentPage + 1) * pxPageHeight;
+          const pushDown = targetPageTop - topRelativeToRoot;
+
+          if (pushDown > 0 && pushDown < pxPageHeight) {
+            const pageSpacer = clonedDoc.createElement('div');
+            pageSpacer.className = 'pdf-pagebreak-always-spacer';
+            pageSpacer.style.display = 'block';
+            pageSpacer.style.height = `${pushDown}px`;
+            pageSpacer.style.margin = '0';
+            pageSpacer.style.padding = '0';
+            pageSpacer.style.border = 'none';
+            pageSpacer.style.backgroundColor = '#ffffff';
+            page2Marker.parentNode?.insertBefore(pageSpacer, page2Marker);
+          }
+        }
+
+        // 3. Dynamic Pagebreak Avoidance for table rows and cards:
         const avoidSelectors = [
           'tr.page-break-inside-avoid',
           'tr.no-break',
           'tbody tr',
           '.foto-kegiatan-card',
-          '.tabel-foto-kegiatan',
-          '.foto-kegiatan-container',
-          '.card-block',
           '.signature-block',
         ];
 
         const elementsToAvoid = Array.from(
-          clonedEl.querySelectorAll<HTMLElement>(avoidSelectors.join(', '))
+          clonedTarget.querySelectorAll<HTMLElement>(avoidSelectors.join(', '))
         );
 
         elementsToAvoid.forEach((el) => {
-          const rootRect = clonedEl.getBoundingClientRect();
+          const rootRect = clonedTarget.getBoundingClientRect();
           const elRect = el.getBoundingClientRect();
           const topRelativeToRoot = elRect.top - rootRect.top;
           const bottomRelativeToRoot = elRect.bottom - rootRect.top;
@@ -155,23 +197,12 @@ export async function buildPdfDocument(
 
           const startPage = Math.floor(topRelativeToRoot / pxPageHeight);
           const endPage = Math.floor((bottomRelativeToRoot - 1) / pxPageHeight);
-
-          // Check if element crosses the boundary between startPage and next page
           const pageBoundaryY = (startPage + 1) * pxPageHeight;
-          const isPhotoTable =
-            el.classList.contains('tabel-foto-kegiatan') ||
-            el.classList.contains('foto-kegiatan-container');
 
-          // For the photo table, if it starts with less than 320px remaining on page 1, push it whole
-          const needsPush =
-            startPage !== endPage ||
-            (isPhotoTable && pageBoundaryY - topRelativeToRoot < 320 && topRelativeToRoot < pageBoundaryY);
-
-          if (needsPush && topRelativeToRoot < pageBoundaryY) {
+          if (startPage !== endPage && topRelativeToRoot < pageBoundaryY) {
             const pushDown = pageBoundaryY - topRelativeToRoot;
 
             if (el.tagName.toLowerCase() === 'tr') {
-              // For table rows, insert an invisible spacer tr with height to push row cleanly
               const spacerRow = clonedDoc.createElement('tr');
               spacerRow.className = 'pdf-pagebreak-spacer-row';
               const spacerCell = clonedDoc.createElement('td');
@@ -185,7 +216,6 @@ export async function buildPdfDocument(
               spacerRow.appendChild(spacerCell);
               el.parentNode?.insertBefore(spacerRow, el);
             } else {
-              // For block containers and cards, insert a spacer div
               const spacerDiv = clonedDoc.createElement('div');
               spacerDiv.className = 'pdf-pagebreak-spacer';
               spacerDiv.style.display = 'block';
@@ -214,7 +244,13 @@ export async function buildPdfDocument(
   const scale = 2;
   const pageCanvasHeight = Math.round(pxPageHeight * scale);
   const totalCanvasHeight = canvas.height;
-  const totalPages = Math.ceil(totalCanvasHeight / pageCanvasHeight) || 1;
+  let totalPages = Math.ceil(totalCanvasHeight / pageCanvasHeight) || 1;
+
+  // Filter out any accidental trailing blank page if height difference is negligible
+  const lastSliceHeight = totalCanvasHeight - (totalPages - 1) * pageCanvasHeight;
+  if (totalPages > 1 && lastSliceHeight < 40) {
+    totalPages -= 1;
+  }
 
   for (let i = 0; i < totalPages; i++) {
     if (i > 0) {

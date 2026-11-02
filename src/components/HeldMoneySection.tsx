@@ -18,11 +18,9 @@ interface HeldMoneySectionProps {
 const QUICK_AMOUNTS = [25000, 50000, 75000, 100000, 150000];
 
 const COMMON_REASONS = [
-  'QRIS Pending',
-  'Transfer Pending',
-  'EDC Belum Cair',
-  'Selisih Kasir',
-  'Kembalian Tertahan',
+  'tidak masuk halaman photo',
+  'Qris Eror',
+  'Halaman Eror',
 ];
 
 export const HeldMoneySection: React.FC<HeldMoneySectionProps> = ({

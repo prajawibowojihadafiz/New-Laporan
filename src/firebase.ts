@@ -92,21 +92,21 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 }
 
 /**
- * Strips heavy data (like huge raw base64 images) before pushing to Firestore
- * to protect against the 1MB document limit.
+ * Sanitizes and cleans data before pushing to Firestore.
+ * Ensures valid photo data without ever truncating base64 strings (preventing corruption).
  */
 function sanitizeReportForFirestore(data: DayReportData): Record<string, unknown> {
-  const safePhotos = (data.photos || []).map((p) => {
-    // If URL is longer than 50KB base64, truncate to prevent 1MB limit crash
-    if (p.url && p.url.length > 50000) {
-      return {
-        id: p.id,
-        name: p.name,
-        url: p.url.substring(0, 500) + '...[compacted]',
-      };
-    }
-    return p;
-  });
+  // Keep clean valid photos, filter out any broken/compacted ones, up to 15 photos
+  const cleanPhotos = (data.photos || [])
+    .filter((p) => p && p.url && !p.url.includes('[compacted]') && p.url.startsWith('data:image/'))
+    .slice(0, 15)
+    .map((p) => ({
+      id: p.id,
+      name: p.name || 'Foto Kegiatan',
+      url: p.url,
+      timestamp: p.timestamp || '',
+      caption: p.caption || '',
+    }));
 
   return {
     date: data.date,
@@ -117,7 +117,7 @@ function sanitizeReportForFirestore(data: DayReportData): Record<string, unknown
     stockCondition: data.stockCondition,
     issues: data.issues || [],
     purchases: data.purchases || [],
-    photos: safePhotos,
+    photos: cleanPhotos,
     notes: data.notes || '',
     heldMoneys: data.heldMoneys || [],
     updatedAt: new Date().toISOString(),

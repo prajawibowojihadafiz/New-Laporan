@@ -102,21 +102,12 @@
     display: block !important;
   }
   .print-container {
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    width: 794px !important;
+    max-width: 794px !important;
+    margin: 0 auto !important;
+    padding: 20px !important;
     box-shadow: none !important;
     border: none !important;
-  }
-  /* Kunci layout grid/flex agar tidak pecah di browser HP */
-  .grid {
-    display: block !important;
-  }
-  .grid > div {
-    width: 100% !important;
-    margin-bottom: 12px !important;
-    page-break-inside: avoid;
   }
   img {
     max-width: 100% !important;
@@ -126,6 +117,7 @@
   /* Aturan native page break pada tabel */
   table {
     page-break-inside: auto !important;
+    border-collapse: collapse !important;
   }
   tr {
     page-break-inside: avoid !important;
@@ -150,23 +142,42 @@
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
-  /* Pindahkan otomatis ke halaman baru jika area halaman 1 sudah tidak cukup */
+  /* Pindahkan otomatis ke halaman baru untuk foto kegiatan */
+  .pdf-page-break-before,
   .tabel-foto-kegiatan {
-    page-break-before: auto;
-    break-inside: avoid !important;
+    page-break-before: always !important;
+    break-before: page !important;
   }
   .foto-grid {
     display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;
-    gap: 8px !important;
+    gap: 10px !important;
     page-break-inside: avoid;
   }
   .foto-kegiatan-img {
     width: 100% !important;
-    height: 90px !important;
+    height: 110px !important;
+    max-width: 180px !important;
+    max-height: 120px !important;
     object-fit: cover !important;
     border-radius: 6px !important;
   }
+}
+
+#pdf-export-template,
+#pdf-report-document {
+  width: 794px !important;
+  min-width: 794px !important;
+  max-width: 794px !important;
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+  box-sizing: border-box !important;
+}
+
+.pdf-page-break-before {
+  page-break-before: always !important;
+  break-before: page !important;
 }
 
 .foto-grid {

@@ -63,21 +63,23 @@ export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTempl
     return (
       <div
         ref={ref}
-        id="pdf-report-document"
-        className="bg-white text-slate-900 p-8 mx-auto text-xs font-sans print-container print:p-2"
+        id="pdf-export-template"
+        className="bg-white text-black p-5 mx-auto text-xs font-sans print-container print:p-2"
         style={{
-          width: '800px',
-          minWidth: '800px',
-          maxWidth: '800px',
+          width: '794px',
+          minWidth: '794px',
+          maxWidth: '794px',
           boxSizing: 'border-box',
           backgroundColor: '#ffffff',
-          color: '#0f172a',
-          fontFamily:
-            '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+          color: '#000000',
+          padding: '20px',
+          fontFamily: 'Arial, Helvetica, sans-serif',
         }}
       >
-        {/* Header Document */}
-        <div className="flex items-center justify-between pb-4 border-b-2 border-slate-900 mb-5">
+        {/* HALAMAN 1: Header + Rekap + Pemasukan + Perangkat/Stok + Kendala + Uang Tertahan + Catatan */}
+        <div className="pdf-page-1" id="pdf-page-1">
+          {/* Header Document */}
+          <div className="flex items-center justify-between pb-4 border-b-2 border-slate-900 mb-5">
           <div className="flex items-center gap-3.5">
             {settings.logoUrl ? (
               <img
@@ -571,46 +573,58 @@ export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTempl
             <p className="text-slate-700 whitespace-pre-wrap leading-relaxed text-[11px]">{notes}</p>
           </div>
         )}
+        </div>
+        {/* AKHIR HALAMAN 1 */}
 
-        {/* TABEL DOKUMENTASI FOTO KEGIATAN (RESPONSIF GRID KHUSUS BANYAK FOTO) */}
-        <div className="tabel-foto-kegiatan foto-kegiatan-container card-block border border-slate-300 rounded-xl overflow-hidden mb-5 bg-white">
+        {/* HALAMAN 2: Dokumentasi Foto Kegiatan (Otomatis pindah ke Halaman 2) + Tanda Tangan */}
+        <div
+          className="pdf-page-2 pdf-page-break-before tabel-foto-kegiatan foto-kegiatan-container card-block border border-slate-300 rounded-xl overflow-hidden mb-5 bg-white"
+          id="pdf-page-2"
+          style={{
+            pageBreakBefore: 'always',
+            breakBefore: 'page',
+            marginTop: '20px',
+          }}
+        >
           <div className="bg-slate-100 px-3.5 py-2.5 border-b border-slate-300 font-extrabold text-slate-800 flex justify-between items-center text-[11px]">
             <span className="flex items-center gap-1.5">
               <span>📷</span> TABEL DOKUMENTASI FOTO KEGIATAN ({photos.length} Foto)
             </span>
             <span className="text-[10px] font-semibold text-slate-500">
-              Grid Kompak ({photos.length} item) • Ringan & Rapi
+              Dokumentasi Harian • Halaman 2
             </span>
           </div>
 
           {photos.length === 0 ? (
-            <div className="py-6 px-4 text-center text-slate-400 italic text-xs">
+            <div className="py-8 px-4 text-center text-slate-400 italic text-xs">
               Belum ada dokumentasi foto kegiatan yang dilampirkan untuk tanggal ini.
             </div>
           ) : (
             <div
-              className="foto-grid p-3.5"
+              className="foto-grid p-4"
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
-                gap: '8px',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: '12px',
               }}
             >
               {photos.map((photo, idx) => (
                 <div
                   key={photo.id}
-                  className="foto-kegiatan-card card-block border border-slate-300 rounded-lg p-1.5 bg-slate-50/80 flex flex-col items-center"
+                  className="foto-kegiatan-card card-block border border-slate-300 rounded-lg p-2 bg-slate-50/80 flex flex-col items-center"
                   style={{
                     breakInside: 'avoid',
                     pageBreakInside: 'avoid',
                     boxSizing: 'border-box',
                   }}
                 >
-                  {/* Photo container constrained to max-width 130px, max-height 100px */}
+                  {/* Photo container constrained to max-width 180px, max-height 120px */}
                   <div
                     style={{
                       width: '100%',
-                      height: '92px',
+                      height: '115px',
+                      maxWidth: '180px',
+                      maxHeight: '120px',
                       overflow: 'hidden',
                       borderRadius: '6px',
                       backgroundColor: '#f1f5f9',
@@ -626,9 +640,9 @@ export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTempl
                       className="foto-kegiatan-img"
                       style={{
                         width: '100%',
-                        height: '92px',
-                        maxWidth: '130px',
-                        maxHeight: '100px',
+                        height: '115px',
+                        maxWidth: '180px',
+                        maxHeight: '120px',
                         objectFit: 'cover',
                         borderRadius: '6px',
                         display: 'block',
@@ -660,6 +674,7 @@ export const PdfReportTemplate = React.forwardRef<HTMLDivElement, PdfReportTempl
             gap: '32px',
             breakInside: 'avoid',
             pageBreakInside: 'avoid',
+            marginTop: '20px',
           }}
         >
           <div>
